@@ -17,6 +17,7 @@ It runs on the subscription you already have: no API keys, no cloud service, not
 - **Slash-command autocomplete**: the engine's commands, your own, and the ones installed in the project (for example the `/dixi.*` commands of [dixi-spec-kit](https://github.com/dixi-project/dixi-spec-kit)).
 - **Full session lifecycle**: launch, stop, turn back on (resuming the conversation) and delete.
 - **Bring your own agent**: besides Claude Code and Codex, define any terminal agent as an engine.
+- **Files and paths in the prompt**: drag or paste files and images, or pick a folder, and its path is inserted for the agent.
 - **Dictation**: hold the space bar to speak instead of typing (uses your browser's speech recognition).
 - **Per-agent settings**: engine, autonomy level, subagents allowed and how many, and account-usage limits.
 - **Guardrails**: an agent never merges, deploys, pushes to the base branch or reads secrets. It ends in a pull request.

@@ -87,6 +87,17 @@ import panel
 assert 'miagente' in panel.pagina('en')
 assert any(c['c'] == '/model' for c in panel.comandos('en', 'con_tareas'))\""
 
+debe "guarda un adjunto sin salirse de su carpeta" "cd '$AQUI/src/dixi_tower' && python3 -B -c \"
+import os, panel
+r = panel.guardar_adjunto('con_tareas', '../../fuera/mi foto.png', b'x')
+assert os.path.dirname(r) == os.path.join(panel.HOME_AG, 'adjuntos', 'con_tareas') and os.path.isfile(r) and ' ' not in os.path.basename(r)\""
+debe "el explorador no sale de la carpeta personal ni muestra ocultos" "cd '$AQUI/src/dixi_tower' && python3 -B -c \"
+import json, os, panel
+assert panel.explorar('/etc')[0] == 403
+d = json.loads(panel.explorar(os.path.expanduser('~'))[1])
+assert d['padre'] is None and not any(n.startswith('.') for n in d['carpetas'] + d['archivos'])\""
+debe "eliminar un agente borra también sus adjuntos" "'$DT' stop con_tareas && '$DT' delete con_tareas && [ ! -d '$DIXI_TOWER_HOME/adjuntos/con_tareas' ]"
+
 echo
 if [ "$fallos" -eq 0 ]; then echo "Todo pasó."; else echo "$fallos prueba(s) fallaron."; fi
 exit "$fallos"

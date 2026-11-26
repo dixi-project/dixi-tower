@@ -554,8 +554,51 @@ def lanzar(datos):
     return 200, creado
 
 
+ADJUNTO_MAX = 25 * 1024 * 1024
+
+
+def guardar_adjunto(agente, nombre, datos):
+    """Guarda una copia de un archivo soltado o pegado en el panel y devuelve su
+    ruta. Una página web no conoce la ruta original de lo que se le suelta, así
+    que el agente trabaja sobre esta copia, en la carpeta de datos."""
+    limpio = re.sub(r"[^\w.\-]", "_", os.path.basename(nombre or ""))[:100].lstrip(".") or "archivo"
+    carpeta = os.path.join(HOME_AG, "adjuntos", agente)
+    os.makedirs(carpeta, exist_ok=True)
+    base, n = time.strftime("%m%d-%H%M%S"), 1
+    ruta = os.path.join(carpeta, f"{base}-{limpio}")
+    while os.path.exists(ruta):
+        n += 1
+        ruta = os.path.join(carpeta, f"{base}-{n}-{limpio}")
+    with open(ruta, "wb") as fh:
+        fh.write(datos)
+    return ruta
+
+
+def explorar(ruta):
+    """Lista una carpeta del usuario para elegir una ruta real. Solo dentro de su
+    carpeta personal y sin archivos ocultos (donde suelen vivir llaves y secretos)."""
+    casa = os.path.realpath(os.path.expanduser("~"))
+    actual = os.path.realpath(ruta) if isinstance(ruta, str) and ruta else os.path.realpath(PROYECTOS_DIR)
+    if not os.path.isdir(actual):
+        actual = casa
+    if actual != casa and not actual.startswith(casa + os.sep):
+        return 403, "Solo se pueden explorar carpetas dentro de tu carpeta personal."
+    try:
+        nombres = sorted(os.listdir(actual), key=str.lower)
+    except OSError:
+        return 403, "No se puede leer esa carpeta."
+    carpetas, archivos = [], []
+    for n in nombres:
+        if not n.startswith("."):
+            (carpetas if os.path.isdir(os.path.join(actual, n)) else archivos).append(n)
+    return 200, json.dumps({"ruta": actual, "padre": os.path.dirname(actual) if actual != casa else None,
+                            "carpetas": carpetas[:500], "archivos": archivos[:500]}, ensure_ascii=False)
+
+
 def accion(datos):
     """Ejecuta una acción de la página. Devuelve (código HTTP, mensaje)."""
+    if datos.get("explorar") is True:
+        return explorar(datos.get("ruta"))
     if datos.get("lanzar") is True:
         return lanzar(datos)
     if datos.get("guardar_config") is True:
@@ -693,6 +736,15 @@ button.peligro.armado{background:var(--rojo);border-color:var(--rojo);color:var(
 #term a:hover{color:#79c0ff}
 .ayuda{margin:8px 0 0;font-size:12px;color:var(--tenue)}
 #abrir-nuevo{padding:9px 12px}
+#consola.soltar{outline:2px dashed var(--azul);outline-offset:-2px}
+#ayuda-adjunto{color:var(--ambar)}
+#ex-ruta{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--codigo);padding:6px 9px;border-radius:6px;overflow-wrap:anywhere;margin-top:12px}
+#ex-lista{list-style:none;margin:10px 0 0;padding:0;max-height:46vh;overflow-y:auto;border:1px solid var(--borde);border-radius:8px}
+#ex-lista button{display:block;width:100%;text-align:left;padding:7px 11px;border:0;border-bottom:1px solid var(--borde);background:transparent;color:var(--texto);font:13px/1.3 inherit;font-family:inherit;cursor:pointer}
+#ex-lista li:last-child button{border-bottom:0}
+#ex-lista button:hover{background:var(--elegido)}
+#ex-lista .ex-carpeta{font-weight:600}
+#ex-error{color:var(--rojo)}
 #dictar{display:inline-flex;align-items:center;gap:6px}
 #dictar.grabando{background:var(--rojo);border-color:var(--rojo);color:var(--sobre-azul)}
 #ayuda-dictado{color:var(--rojo)}
@@ -860,6 +912,84 @@ JS = """
     var v=txt.value;if(!sel||!v.trim())return;
     txt.value='';borradores[sel]='';accion({proyecto:sel,texto:v});
   });
+  // ── Adjuntos: soltar o pegar archivos (se guarda una copia y se inserta su ruta) y
+  // explorador para insertar la ruta real de un archivo o carpeta.
+  var adj=$('ayuda-adjunto');
+  function pedir(datos){
+    return fetch('/api/accion',{method:'POST',cache:'no-store',
+      headers:{'Content-Type':'application/json','X-Panel-Token':token},body:JSON.stringify(datos)})
+      .then(function(r){if(r.status===403&&!datos.explorar){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;return m;});});
+  }
+  function citar(ruta){return ruta.indexOf(' ')>-1?"'"+ruta+"'":ruta;}
+  function insertar(texto){
+    var a=txt.selectionStart,b=txt.selectionEnd,v=txt.value,antes=v.slice(0,a),despues=v.slice(b);
+    if(antes&&!/ $/.test(antes))antes+=' ';
+    txt.value=antes+texto+' '+despues;
+    var c=(antes+texto+' ').length;txt.focus();txt.setSelectionRange(c,c);cerrarSug();
+  }
+  function avisoAdj(clave,nombre){adj.textContent=(adj.dataset[clave]||'').replace('{nombre}',nombre||'');adj.hidden=false;}
+  function subir(archivos){
+    if(!sel||!archivos.length)return;
+    var p=sel,cola=[].slice.call(archivos);
+    avisoAdj('subiendo');
+    (function siguiente(){
+      var f=cola.shift();
+      if(!f){adj.hidden=true;return;}
+      if(f.size>25*1024*1024){avisoAdj('grande',f.name);return;}
+      fetch('/api/adjunto/'+encodeURIComponent(p),{method:'POST',cache:'no-store',
+        headers:{'X-Panel-Token':token,'X-Nombre':encodeURIComponent(f.name),'Content-Type':'application/octet-stream'},body:f})
+        .then(function(r){return r.text().then(function(m){if(!r.ok)throw m;return m;});})
+        .then(function(ruta){if(p===sel)insertar(citar(ruta));siguiente();})
+        .catch(function(){avisoAdj('error',f.name);});
+    })();
+  }
+  var ex=$('explorar'),exL=$('ex-lista'),exR=$('ex-ruta'),exE=$('ex-error'),exActual=null;
+  function abrirExplorar(ruta){
+    pedir({explorar:true,ruta:ruta||exActual||null}).then(function(m){
+      var d=JSON.parse(m);exActual=d.ruta;exR.textContent=d.ruta;exL.textContent='';exE.hidden=true;
+      function fila(nombre,tipo,destino){
+        var li=document.createElement('li'),b=document.createElement('button');
+        b.type='button';b.className='ex-'+tipo;b.textContent=nombre;b.dataset.tipo=tipo;b.dataset.destino=destino;
+        li.appendChild(b);exL.appendChild(li);
+      }
+      if(d.padre)fila('..','carpeta',d.padre);
+      d.carpetas.forEach(function(n){fila(n+'/','carpeta',d.ruta+'/'+n);});
+      d.archivos.forEach(function(n){fila(n,'archivo',d.ruta+'/'+n);});
+      if(!ex.open)ex.showModal();
+    }).catch(function(m){exE.textContent=(typeof m==='string'&&m)?m:'';exE.hidden=!exE.textContent;if(!ex.open)mal();});
+  }
+  $('adjuntar').addEventListener('click',function(){if(sel)abrirExplorar();});
+  $('ex-cancelar').addEventListener('click',function(){ex.close();});
+  $('ex-usar').addEventListener('click',function(){if(exActual){ex.close();insertar(citar(exActual));}});
+  exL.addEventListener('click',function(ev){
+    var b=ev.target.closest('button');if(!b)return;
+    if(b.dataset.tipo==='carpeta')abrirExplorar(b.dataset.destino);
+    else{ex.close();insertar(citar(b.dataset.destino));}
+  });
+  ['dragenter','dragover'].forEach(function(n){form.addEventListener(n,function(ev){
+    if(ev.dataTransfer&&[].indexOf.call(ev.dataTransfer.types||[],'Files')>-1){ev.preventDefault();form.classList.add('soltar');}
+  });});
+  ['dragleave','dragend'].forEach(function(n){form.addEventListener(n,function(){form.classList.remove('soltar');});});
+  form.addEventListener('drop',function(ev){
+    form.classList.remove('soltar');
+    var dt=ev.dataTransfer;if(!dt||[].indexOf.call(dt.types||[],'Files')<0)return;   // texto arrastrado: lo inserta el navegador
+    ev.preventDefault();
+    var archivos=[],carpeta=false,items=dt.items||[];
+    for(var i=0;i<items.length;i++){
+      if(items[i].kind!=='file')continue;
+      var entrada=items[i].webkitGetAsEntry?items[i].webkitGetAsEntry():null;
+      if(entrada&&entrada.isDirectory){carpeta=true;continue;}
+      var f=items[i].getAsFile();if(f)archivos.push(f);
+    }
+    if(!items.length)archivos=[].slice.call(dt.files||[]);
+    if(archivos.length)subir(archivos);
+    if(carpeta){avisoAdj('carpeta');abrirExplorar();}
+  });
+  txt.addEventListener('paste',function(ev){
+    var f=ev.clipboardData&&ev.clipboardData.files;
+    if(f&&f.length){ev.preventDefault();subir(f);}
+  });
+
   // ── Dictado: mantener presionada la barra espaciadora (con la caja vacía) o el botón.
   // Usa el reconocimiento de voz del navegador; el texto queda en la caja, no se envía solo.
   var Rec=window.SpeechRecognition||window.webkitSpeechRecognition,mic=$('dictar'),ayudaVoz=$('ayuda-dictado'),
@@ -1132,10 +1262,13 @@ def pagina(idioma):
       <div class="botones">
         <button type="submit" class="b primario">{e(t["enviar"])}</button>
         <button type="button" class="b" id="dictar" title="{e(t["dictado_aviso"], quote=True)}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M8 10.5a2.5 2.5 0 0 0 2.5-2.5V4a2.5 2.5 0 0 0-5 0v4A2.5 2.5 0 0 0 8 10.5Zm4-2.5a.75.75 0 0 1 1.5 0 5.5 5.5 0 0 1-4.75 5.45V15a.75.75 0 0 1-1.5 0v-1.55A5.5 5.5 0 0 1 2.5 8 .75.75 0 0 1 4 8a4 4 0 0 0 8 0Z"/></svg> {e(t["dictar"])}</button>
+        <button type="button" class="b" id="adjuntar" title="{e(t["ruta_aviso"], quote=True)}">{e(t["ruta_boton"])}</button>
         <span class="teclas"><span class="tenue">{e(t["teclas"])}</span>{teclas}</span>
         <button type="button" class="b peligro" data-detener data-normal="{e(t["detener"], quote=True)}" data-confirmar="{e(t["confirmar"], quote=True)}">{e(t["detener"])}</button>
       </div>
       <p class="ayuda">{e(t["teclado"])}</p>
+      <p class="ayuda">{e(t["adjuntos_ayuda"])}</p>
+      <p class="ayuda" id="ayuda-adjunto" role="status" data-subiendo="{e(t["adjunto_subiendo"], quote=True)}" data-error="{e(t["adjunto_error"], quote=True)}" data-grande="{e(t["adjunto_grande"], quote=True)}" data-carpeta="{e(t["adjunto_carpeta"], quote=True)}" hidden></p>
       <p class="ayuda" id="ayuda-dictado" role="status" data-permiso="{e(t["dictado_permiso"], quote=True)}" hidden></p>
     </form>
     <div id="apagado" hidden>
@@ -1165,6 +1298,17 @@ def pagina(idioma):
       <button type="submit" class="b primario" id="n-lanzar" data-normal="{e(t["lanzar"], quote=True)}" data-ocupado="{e(t["lanzando"], quote=True)}">{e(t["lanzar"])}</button>
     </div>
   </form>
+</dialog>
+<dialog id="explorar" aria-labelledby="ex-t">
+  <h2 id="ex-t">{e(t["ruta_titulo"])}</h2>
+  <p class="tenue">{e(t["ruta_nota"])}</p>
+  <p id="ex-ruta"></p>
+  <ul id="ex-lista"></ul>
+  <p id="ex-error" role="alert" hidden></p>
+  <div class="botones">
+    <button type="button" class="b" id="ex-cancelar">{e(t["cancelar"])}</button>
+    <button type="button" class="b primario" id="ex-usar">{e(t["ruta_usar"])}</button>
+  </div>
 </dialog>
 <dialog id="ajustes" aria-labelledby="aj-t">
   <form id="form-ajustes">
@@ -1264,6 +1408,18 @@ class Manejador(BaseHTTPRequestHandler):
         if (not self._host_local() or (origen and origen not in permitido)
                 or not secrets.compare_digest(self.headers.get("X-Panel-Token", ""), TOKEN)):
             return self._enviar(403, "403")
+        if self.path.startswith("/api/adjunto/"):
+            agente = unquote(self.path[len("/api/adjunto/"):])
+            if not NOMBRE_OK.match(agente) or agente not in proyectos_con_estado():
+                return self._enviar(404, "404")
+            try:
+                largo = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                return self._enviar(400, "400")
+            if largo <= 0 or largo > ADJUNTO_MAX:
+                return self._enviar(413, "413")
+            ruta = guardar_adjunto(agente, unquote(self.headers.get("X-Nombre", "")), self.rfile.read(largo))
+            return self._enviar(200, ruta)
         if self.path != "/api/accion":
             return self._enviar(404, "404")
         try:

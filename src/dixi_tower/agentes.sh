@@ -267,6 +267,8 @@ cmd_eliminar() {
     git -C "$wt" worktree remove "$wt" || { echo "git no pudo quitar el worktree $wt." >&2; exit 1; }
   fi
   rm -f "$est" "$HOME_AG/run/$ag.sh" "$HOME_AG/run/$ag.prompt.txt" "$HOME_AG/run/$ag.reanudar.sh"
+  rm -f "$HOME_AG/run/$ag.reglas.md" "$HOME_AG/uso/$ag.json" "$HOME_AG/uso/$ag.subagentes.json"
+  rm -rf "$HOME_AG/adjuntos/$ag"
   echo "Eliminado: $ag. La rama ${rama:-del agente} se conserva en el repositorio."
 }
 

@@ -115,5 +115,15 @@
   "dictar": "Dictar",
   "dictado_escuchando": "Escuchando… suelta para terminar",
   "dictado_permiso": "El navegador no tiene permiso para usar el micrófono. Actívalo para este sitio y vuelve a intentar.",
-  "dictado_aviso": "Mantén presionado para dictar. Usa el reconocimiento de voz de tu navegador: en Chrome el audio se transcribe en servidores de Google."
+  "dictado_aviso": "Mantén presionado para dictar. Usa el reconocimiento de voz de tu navegador: en Chrome el audio se transcribe en servidores de Google.",
+  "ruta_boton": "Ruta",
+  "ruta_aviso": "Insertar en tu mensaje la ruta de un archivo o carpeta de tu equipo",
+  "ruta_titulo": "Elegir un archivo o una carpeta",
+  "ruta_nota": "Su ruta se inserta en tu mensaje para que el agente sepa dónde está. No se muestran los archivos ocultos.",
+  "ruta_usar": "Usar esta carpeta",
+  "adjuntos_ayuda": "Adjuntos: arrastra o pega aquí archivos e imágenes; se guarda una copia y se inserta su ruta. Para la ruta real de un archivo o una carpeta, usa «Ruta».",
+  "adjunto_subiendo": "Guardando el adjunto…",
+  "adjunto_error": "No se pudo guardar «{nombre}».",
+  "adjunto_grande": "«{nombre}» pesa más de 25 MB: usa «Ruta» para indicar dónde está en vez de copiarlo.",
+  "adjunto_carpeta": "Una página web no puede conocer la ruta de una carpeta que se le suelta. Elígela aquí y se insertará su ruta."
 }

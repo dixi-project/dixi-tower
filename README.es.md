@@ -17,6 +17,7 @@ Funciona con la suscripción que ya tienes: sin llaves de API, sin servicio en l
 - **Autocompletado de comandos «/»**: los del motor, los tuyos y los instalados en el proyecto (por ejemplo los `/dixi.*` de [dixi-spec-kit](https://github.com/dixi-project/dixi-spec-kit)).
 - **Ciclo completo de la sesión**: lanzar, detener, encender de nuevo (retomando la conversación) y eliminar.
 - **Trae tu propio agente**: además de Claude Code y Codex, define como motor cualquier agente de terminal.
+- **Archivos y rutas en el mensaje**: arrastra o pega archivos e imágenes, o elige una carpeta, y su ruta se inserta para el agente.
 - **Dictado**: mantén presionada la barra espaciadora para hablar en vez de escribir (usa el reconocimiento de voz del navegador).
 - **Ajustes por agente**: motor, nivel de autonomía, subagentes permitidos y cuántos, y límites de uso de la cuenta.
 - **Barreras**: un agente nunca integra, despliega, publica en la rama base ni lee secretos. Termina en un pull request.

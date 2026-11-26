@@ -106,6 +106,15 @@ Además de Claude Code y Codex, puedes usar cualquier agente que se abra desde l
 
 Con un motor propio, Dixi Tower te da lo que no depende del motor: worktree y rama propios, consola en vivo, teclado, ciclo de vida y estado aproximado (por cambios en su pantalla). No aplican la autonomía, los subagentes, los límites de uso ni la barrera propia: eso depende de lo que tu motor ofrezca.
 
+## Archivos y rutas en el mensaje
+
+Para que el agente sepa de qué archivo o carpeta le hablas:
+
+- **Arrastra o pega** archivos e imágenes sobre la caja de texto. Por seguridad, un navegador nunca le revela a una página la ruta real de lo que se le suelta, así que el panel guarda una **copia** en `adjuntos/<agente>/` de la carpeta de datos e inserta la ruta de esa copia. Límite: 25 MB por archivo. Las copias se borran al eliminar el agente.
+- **Botón «Ruta»**: abre un explorador de tus carpetas e inserta la **ruta real** del archivo o carpeta que elijas, sin copiar nada. Es la forma de indicar una carpeta, o un archivo grande. Solo muestra lo que está dentro de tu carpeta personal y oculta los archivos que empiezan por punto.
+
+Las rutas con espacios se insertan entre comillas.
+
 ## Dictado
 
 En el panel puedes dictar en vez de escribir: mantén presionada la **barra espaciadora** con la caja vacía, o el botón **Dictar**, y suelta para terminar. El texto queda en la caja para que lo revises; no se envía solo.

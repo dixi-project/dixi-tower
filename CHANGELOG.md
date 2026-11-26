@@ -19,6 +19,7 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Panel como servicio de macOS.
 - Motores propios: cualquier agente de terminal se puede definir como motor.
 - Dictado en el panel, con el reconocimiento de voz del navegador.
+- Archivos y rutas en el mensaje: arrastrar o pegar archivos (se guarda una copia) y explorador de carpetas para insertar rutas reales.
 - Comandos y ayuda en inglés y en español; `dixi-tower doctor`.
 - Prueba de humo (`tests/smoke.sh`).
 

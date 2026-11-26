@@ -115,5 +115,15 @@
   "dictar": "Dictate",
   "dictado_escuchando": "Listening… release to finish",
   "dictado_permiso": "The browser is not allowed to use the microphone. Enable it for this site and try again.",
-  "dictado_aviso": "Hold to dictate. Uses your browser's speech recognition: in Chrome the audio is transcribed on Google's servers."
+  "dictado_aviso": "Hold to dictate. Uses your browser's speech recognition: in Chrome the audio is transcribed on Google's servers.",
+  "ruta_boton": "Path",
+  "ruta_aviso": "Insert the path of a file or folder on your computer into your message",
+  "ruta_titulo": "Pick a file or a folder",
+  "ruta_nota": "Its path is inserted into your message so the agent knows where it is. Hidden files are not shown.",
+  "ruta_usar": "Use this folder",
+  "adjuntos_ayuda": "Attachments: drag or paste files and images here; a copy is saved and its path inserted. For the real path of a file or folder, use “Path”.",
+  "adjunto_subiendo": "Saving the attachment…",
+  "adjunto_error": "“{nombre}” could not be saved.",
+  "adjunto_grande": "“{nombre}” is larger than 25 MB: use “Path” to point to it instead of copying it.",
+  "adjunto_carpeta": "A web page cannot know the path of a folder dropped on it. Pick it here and its path will be inserted."
 }
