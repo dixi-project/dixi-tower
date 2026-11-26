@@ -52,7 +52,7 @@
   "atajos": "Alt+↑ and Alt+↓ switch agents",
   "agentes": "Agents",
   "sugerida": "{texto}   ⇥ Tab to use this suggestion from the agent",
-  "teclado": "Keyboard: with the box empty, ↑ ↓ Enter and Esc go straight to the agent, and Tab takes its suggestion. When the agent needs you, 1, 2 and 3 pick the menu option.",
+  "teclado": "Keyboard: with the box empty, ↑ ↓ Enter and Esc go straight to the agent, Tab takes its suggestion and holding the space bar dictates. When the agent needs you, 1, 2 and 3 pick the menu option.",
   "nuevo": "＋ New agent",
   "nuevo_titulo": "Launch a new agent",
   "nuevo_nota": "A new branch and worktree are created for the project. The agent runs on your subscription and ends with a pull request; it never merges or deploys.",
@@ -104,12 +104,16 @@
   "config_nota": "Values every new agent starts with. Existing agents keep their own; change those in their Settings.",
   "guardar": "Save",
   "error_config": "The settings could not be saved.",
-  "uso_codex": "not available with Codex; shown in the footer of its console",
+  "uso_codex": "not available with this engine; if it shows it, look at the footer of its console",
   "codex_nota": "With Codex: its sandbox protects .git, so in supervised and balanced it asks you to approve each commit, and in autonomous an automatic reviewer approves it. Usage limits cannot be enforced yet, the subagent cap applies when the agent is turned on, and its status in the list is approximate.",
   "comandos": "Commands",
   "comando_proyecto": "project",
   "comando_usuario": "yours",
   "comando_motor": "engine",
   "tope_revision": "In-review task limit per project",
-  "tope_revision_ayuda": "Only applies to projects with tasks/TASKS.md: no new agent is launched if the project has more tasks in review than this number, unless you force it at launch. 0 turns it off."
+  "tope_revision_ayuda": "Only applies to projects with tasks/TASKS.md: no new agent is launched if the project has more tasks in review than this number, unless you force it at launch. 0 turns it off.",
+  "dictar": "Dictate",
+  "dictado_escuchando": "Listening… release to finish",
+  "dictado_permiso": "The browser is not allowed to use the microphone. Enable it for this site and try again.",
+  "dictado_aviso": "Hold to dictate. Uses your browser's speech recognition: in Chrome the audio is transcribed on Google's servers."
 }

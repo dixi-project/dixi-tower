@@ -69,7 +69,7 @@ def main():
     os.replace(tmp, ruta)
 
     if avisar:
-        if os.environ.get("DIXI_AGENTES_AVISOS", "1") == "0":
+        if (os.environ.get("DIXI_TOWER_NOTIFY") or os.environ.get("DIXI_AGENTES_AVISOS") or "1") == "0":
             return
         # terminal-notifier: al hacer clic abre el panel en ese agente. Con
         # osascript el aviso sale a nombre de «Script Editor» y el clic abre esa app.
@@ -77,7 +77,7 @@ def main():
         notificador = shutil.which("terminal-notifier") or next(
             (r for r in ("/opt/homebrew/bin/terminal-notifier", "/usr/local/bin/terminal-notifier") if os.path.exists(r)), None)
         if notificador:
-            puerto = os.environ.get("DIXI_AGENTES_PUERTO", "4310")
+            puerto = (os.environ.get("DIXI_TOWER_PORT") or os.environ.get("DIXI_AGENTES_PUERTO") or "4310")
             subprocess.run(
                 [notificador, "-title", f"Agente {agente}", "-message", avisar.lstrip("-[") or "aviso",
                  "-group", f"agente-{agente}", "-open", f"http://localhost:{puerto}/#{agente}"],

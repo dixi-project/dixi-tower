@@ -6,6 +6,8 @@ Cómo se usa Dixi Tower día a día: comandos, configuración, piezas internas y
 
 ## Uso rápido
 
+Los comandos tienen nombre en español y en inglés (`lanzar`/`launch`, `estado`/`status`, `detener`/`stop`…). `dixi-tower doctor` revisa requisitos e instalación.
+
 ```bash
 dixi-tower servicio instalar    # panel siempre encendido en http://localhost:4310/
 dixi-tower servicio reiniciar   # tras cambiar panel.py o los catálogos
@@ -14,7 +16,7 @@ dixi-tower servicio quitar
 dixi-tower panel                # alternativa sin servicio: lo levanta en tmux
 ```
 
-El servicio es un LaunchAgent (`~/Library/LaunchAgents/com.dixi-project.dixi-tower.plist`): arranca al iniciar sesión en la Mac y launchd lo relanza si se cae, sin depender de tmux. Su salida va a `~/.agentes/panel.log`. Guarda el `PATH` del momento en que se instaló; si cambia dónde viven `tmux`, `git`, `gh` o `claude`, hay que reinstalarlo.
+El servicio es un LaunchAgent (`~/Library/LaunchAgents/com.dixi-project.dixi-tower.plist`): arranca al iniciar sesión en la Mac y launchd lo relanza si se cae, sin depender de tmux. Su salida va a `~/.dixi-tower/panel.log`. Guarda el `PATH` del momento en que se instaló; si cambia dónde viven `tmux`, `git`, `gh` o `claude`, hay que reinstalarlo.
 
 Desde el panel se hace todo lo demás: lanzar un agente («＋ Nuevo agente»), ver su consola, escribirle, mandarle teclas y detenerlo.
 
@@ -28,12 +30,12 @@ dixi-tower estado
 dixi-tower ver <agente> | decir <agente> "<msg>" | detener <agente>
 dixi-tower reanudar <agente>                       # encender uno cerrado y retomar su conversación
 dixi-tower eliminar <agente>                       # quitar uno cerrado y su worktree
-tmux attach -t agentes                                             # consolas en vivo
+tmux attach -t dixi-tower                                             # consolas en vivo
 ```
 
 ## Configuración
 
-Se cambia desde el panel: **Configuración** (valores con los que nace cada agente, en `~/.agentes/config.json`) y **Ajustes** en la ficha de cada agente (su copia propia, en su archivo de estado).
+Se cambia desde el panel: **Configuración** (valores con los que nace cada agente, en `~/.dixi-tower/config.json`) y **Ajustes** en la ficha de cada agente (su copia propia, en su archivo de estado).
 
 | Ajuste | Opciones | Cuándo aplica |
 |---|---|---|
@@ -68,14 +70,14 @@ El soporte de Codex está **sin validar con una sesión real**: el arranque se p
 
 | Pieza | Qué hace |
 |---|---|
-| `dixi-tower` | Crea el worktree y la rama, arma el prompt y abre el agente en una ventana de la sesión tmux `agentes` |
-| `~/.agentes/proyectos.json` | Registro de proyectos (repo, rama base y comando de flujo). Un repo de la carpeta de proyectos se da de alta solo al lanzarlo (`registro.py`) |
+| `dixi-tower` | Crea el worktree y la rama, arma el prompt y abre el agente en una ventana de la sesión tmux `dixi-tower` |
+| `~/.dixi-tower/proyectos.json` | Registro de proyectos (repo, rama base y comando de flujo). Un repo de la carpeta de proyectos se da de alta solo al lanzarlo (`registro.py`) |
 | `worker-settings.json` | Permisos y hooks que se inyectan al agente con `--settings`, sin tocar el repo del proyecto |
 | `worker-prompt.md` | Reglas del agente: una tarea, termina en PR, nunca integra ni despliega |
-| `hooks/estado-hook.py` | Escribe `~/.agentes/estado/<agente>.json` en cada evento y avisa por macOS cuando el agente se detiene |
+| `hooks/estado-hook.py` | Escribe `~/.dixi-tower/estado/<agente>.json` en cada evento y avisa por macOS cuando el agente se detiene |
 | `config.py` | Configuración global y por agente, y comprobación de límites |
 | `arranque.py` | Escribe el script que abre o retoma la sesión según motor y autonomía |
-| `hooks/barra.py` | Barra de estado del agente: guarda el uso de la cuenta en `~/.agentes/uso/` y muestra la barra propia del usuario |
+| `hooks/barra.py` | Barra de estado del agente: guarda el uso de la cuenta en `~/.dixi-tower/uso/` y muestra la barra propia del usuario |
 | `hooks/control.py` | Antes de cada herramienta: aplica los límites de uso y el tope de subagentes |
 | `hooks/codex-notify.py` | Fin de turno de un agente Codex: actualiza su estado y avisa |
 | `comandos.json` | Comandos propios de cada motor para el autocompletado |
@@ -83,11 +85,38 @@ El soporte de Codex está **sin validar con una sesión real**: el arranque se p
 | `panel.py` | Panel web: lee los archivos de estado, git y tmux; textos en `locales/` |
 | `tareas.py`, `estado.py`, `ocupado.py` | Lectura de `tasks/TASKS.md`, tabla de estado y control de worktree en uso |
 
+## Motores propios
+
+Además de Claude Code y Codex, puedes usar cualquier agente que se abra desde la terminal: otro CLI, un modelo local, un guion tuyo. Se definen en la clave `motores` de la configuración (`config.json` en la carpeta de datos):
+
+```json
+{
+  "motores": {
+    "aider": {
+      "comando": "aider --message {instruccion}",
+      "reanudar": "aider --restore-chat-history"
+    }
+  }
+}
+```
+
+- `comando` abre la sesión. `{instruccion}` se sustituye por el encargo y `{reglas}` por las reglas del agente; ambos son opcionales.
+- `reanudar` es opcional: lo que se ejecuta al encender de nuevo un agente detenido. Si falta, se usa `comando` con el encargo «Continúa con el encargo anterior».
+- El motor aparece en los selectores del panel y en `--engine <nombre>`.
+
+Con un motor propio, Dixi Tower te da lo que no depende del motor: worktree y rama propios, consola en vivo, teclado, ciclo de vida y estado aproximado (por cambios en su pantalla). No aplican la autonomía, los subagentes, los límites de uso ni la barrera propia: eso depende de lo que tu motor ofrezca.
+
+## Dictado
+
+En el panel puedes dictar en vez de escribir: mantén presionada la **barra espaciadora** con la caja vacía, o el botón **Dictar**, y suelta para terminar. El texto queda en la caja para que lo revises; no se envía solo.
+
+Usa el reconocimiento de voz del navegador, que **no es local**: en Chrome el audio se transcribe en servidores de Google y en Safari lo procesa Apple. Si eso no es aceptable para tu trabajo, no lo uses.
+
 ## Reglas del agente
 
 Todo agente recibe las reglas de `worker-prompt.md`: un encargo, una rama, termina en un pull request, nunca integra, despliega ni lee secretos.
 
-Para añadir las tuyas, crea `~/.agentes/reglas.md`. Su contenido se agrega al final de las reglas de cada agente la próxima vez que se enciende. Sirve para convenciones de tu equipo: idioma de los commits, tamaño máximo de un pull request, qué archivos no se tocan.
+Para añadir las tuyas, crea `~/.dixi-tower/reglas.md`. Su contenido se agrega al final de las reglas de cada agente la próxima vez que se enciende. Sirve para convenciones de tu equipo: idioma de los commits, tamaño máximo de un pull request, qué archivos no se tocan.
 
 ## Integración con tareas (opcional)
 
@@ -117,16 +146,19 @@ Con Codex solo se ofrecen los del motor. ↑ ↓ eligen, Tab o Enter completan, 
 - **Ramas**: con tarea del tablero, `st/<id>-<slug>` (mueve la tarjeta en sys_task); con instrucción libre, `agente/<slug>-<fecha>` (no mueve nada).
 - **Ciclo de un agente**: lanzar → (detener ⇄ reanudar) → eliminar. Eliminar exige que esté detenido y sin archivos sin commit; borra su worktree y su estado, y **conserva la rama** con sus commits.
 - **Tope en revisión** (solo con la integración de tareas): ver «Integración con tareas».
-- **Los datos de trabajo** viven en `~/.agentes/` (`estado/`, `run/`, `worktrees/`), fuera de cualquier repositorio.
+- **Los datos de trabajo** viven en `~/.dixi-tower/` (`estado/`, `run/`, `worktrees/`), fuera de cualquier repositorio.
 
 ## Variables
 
+Los nombres anteriores (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) se siguen aceptando.
+
 | Variable | Por defecto | Para qué |
 |---|---|---|
-| `DIXI_PROYECTOS_DIR` | `~/projects` | Carpeta cuyos repos se pueden lanzar |
-| `DIXI_AGENTES_HOME` | `~/.agentes` | Estado, scripts de arranque y worktrees |
-| `DIXI_AGENTES_PUERTO` | `4310` | Puerto del panel |
-| `DIXI_AGENTES_AVISOS` | `1` | `0` apaga las notificaciones de macOS |
+| `DIXI_TOWER_PROJECTS` | `~/projects` | Carpeta cuyos repositorios se pueden lanzar |
+| `DIXI_TOWER_HOME` | `~/.dixi-tower` | Carpeta de datos: estado, configuración, scripts de arranque y worktrees. Si solo existe `~/.dixi-tower` (instalaciones anteriores), se usa esa |
+| `DIXI_TOWER_PORT` | `4310` | Puerto del panel |
+| `DIXI_TOWER_NOTIFY` | `1` | `0` apaga las notificaciones |
+| `DIXI_TOWER_SESSION` | `dixi-tower` | Nombre de la sesión tmux de los agentes |
 
 ## Seguridad del panel
 

@@ -35,12 +35,12 @@ def main():
         json.dump(d, fh, ensure_ascii=False, indent=1)
     os.replace(ruta + ".tmp", ruta)
 
-    if os.environ.get("DIXI_AGENTES_AVISOS", "1") == "0":
+    if (os.environ.get("DIXI_TOWER_NOTIFY") or os.environ.get("DIXI_AGENTES_AVISOS") or "1") == "0":
         return
     notificador = shutil.which("terminal-notifier") or next(
         (r for r in ("/opt/homebrew/bin/terminal-notifier", "/usr/local/bin/terminal-notifier") if os.path.exists(r)), None)
     if notificador:
-        puerto = os.environ.get("DIXI_AGENTES_PUERTO", "4310")
+        puerto = (os.environ.get("DIXI_TOWER_PORT") or os.environ.get("DIXI_AGENTES_PUERTO") or "4310")
         subprocess.run([notificador, "-title", f"Agente {agente}", "-message", "terminó su turno",
                         "-group", f"agente-{agente}", "-open", f"http://localhost:{puerto}/#{agente}"],
                        capture_output=True, timeout=5)

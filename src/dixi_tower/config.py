@@ -13,10 +13,29 @@ Uso como programa:
 """
 import json
 import os
+import re
 import sys
 
-HOME_AG = os.environ.get("DIXI_AGENTES_HOME", os.path.expanduser("~/.agentes"))
-MOTORES = ("claude", "codex")
+
+
+def _carpeta_de_datos():
+    """`~/.dixi-tower`, salvo que se indique otra. Las instalaciones anteriores al
+    nombre Dixi Tower usaban `~/.agentes`: si solo existe esa, se sigue usando."""
+    for variable in ("DIXI_TOWER_HOME", "DIXI_AGENTES_HOME"):
+        if os.environ.get(variable):
+            return os.environ[variable]
+    nueva, anterior = os.path.expanduser("~/.dixi-tower"), os.path.expanduser("~/.agentes")
+    return anterior if os.path.isdir(anterior) and not os.path.isdir(nueva) else nueva
+
+
+def entorno(nuevo, anterior, respaldo=""):
+    """Variable de entorno con su nombre actual o, si no está, con el anterior."""
+    return os.environ.get(nuevo) or os.environ.get(anterior) or respaldo
+
+
+HOME_AG = _carpeta_de_datos()
+MOTORES = ("claude", "codex")          # motores con soporte propio
+NOMBRE_MOTOR = re.compile(r"^[a-z0-9][a-z0-9_-]{0,29}$")
 AUTONOMIAS = ("supervisada", "equilibrada", "autonoma")
 PREDETERMINADA = {
     "motor": "claude",
@@ -46,7 +65,7 @@ def normalizar(datos, base=None):
     sub = datos.get("subagentes") if isinstance(datos.get("subagentes"), dict) else {}
     lim = datos.get("limites") if isinstance(datos.get("limites"), dict) else {}
     return {
-        "motor": datos.get("motor") if datos.get("motor") in MOTORES else base["motor"],
+        "motor": datos.get("motor") if datos.get("motor") in motores_disponibles() else base["motor"],
         "autonomia": datos.get("autonomia") if datos.get("autonomia") in AUTONOMIAS else base["autonomia"],
         "subagentes": {
             "permitidos": bool(sub["permitidos"]) if "permitidos" in sub else base["subagentes"]["permitidos"],
@@ -58,6 +77,31 @@ def normalizar(datos, base=None):
         },
         "tope_revision": _entero(datos.get("tope_revision"), 0, 99, base.get("tope_revision", 0)),
     }
+
+
+def motores_propios():
+    """Motores que el usuario definió en la configuración global, clave `motores`:
+
+        "motores": {"aider": {"comando": "aider --message {instruccion}",
+                              "reanudar": "aider --restore-chat-history"}}
+
+    `comando` abre la sesión; `{instruccion}` se sustituye por el encargo y
+    `{reglas}` por las reglas del agente. `reanudar` es opcional.
+    """
+    crudo = _leer(ruta_global()).get("motores")
+    limpios = {}
+    if isinstance(crudo, dict):
+        for nombre, d in crudo.items():
+            if (isinstance(nombre, str) and NOMBRE_MOTOR.match(nombre) and nombre not in MOTORES
+                    and isinstance(d, dict) and isinstance(d.get("comando"), str) and d["comando"].strip()):
+                limpios[nombre] = {"comando": d["comando"].strip()}
+                if isinstance(d.get("reanudar"), str) and d["reanudar"].strip():
+                    limpios[nombre]["reanudar"] = d["reanudar"].strip()
+    return limpios
+
+
+def motores_disponibles():
+    return list(MOTORES) + sorted(motores_propios())
 
 
 def _leer(ruta):
@@ -90,6 +134,9 @@ def global_():
 
 def guardar_global(datos):
     nueva = normalizar(datos, global_())
+    propios = motores_propios()          # se editan a mano en el archivo: no se pierden al guardar
+    if propios:
+        nueva["motores"] = propios
     _escribir(ruta_global(), nueva)
     return nueva
 
@@ -140,7 +187,8 @@ if __name__ == "__main__":
         for clave in ("motor", "autonomia"):
             if f"--{clave}" in args:
                 valor = args[args.index(f"--{clave}") + 1]
-                permitidos = MOTORES if clave == "motor" else AUTONOMIAS
+                permitidos = motores_disponibles() if clave == "motor" else AUTONOMIAS
+                valor = {"supervised": "supervisada", "balanced": "equilibrada", "autonomous": "autonoma"}.get(valor, valor)
                 if valor and valor not in permitidos:
                     sys.exit(f"Valor inválido para {clave}: {valor} (opciones: {', '.join(permitidos)})")
                 if valor:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Dixi Tower — torre de control local para agentes de código.
-# Lanza sesiones interactivas de `claude` dentro de tmux, cada una en su propio
-# worktree y rama, con el login de la suscripción. Un proyecto puede tener varios
+# Lanza sesiones interactivas de tu agente de código dentro de tmux, cada una en su
+# propio worktree y rama. Un proyecto puede tener varios
 # agentes a la vez: el primero se llama como el proyecto y los siguientes
 # <proyecto>@2, <proyecto>@3… Ese nombre es el <agente> de ver, decir y detener.
 #
@@ -17,14 +17,26 @@
 #   dixi-tower abrir                           cómo entrar a verlos en vivo
 #   dixi-tower panel [puerto]                  panel web local (http://localhost:4310/)
 #   dixi-tower servicio instalar|quitar|reiniciar|estado   panel siempre encendido (launchd)
+#   dixi-tower doctor                          revisa requisitos e instalación
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOME_AG="${DIXI_AGENTES_HOME:-$HOME/.agentes}"
+# Carpeta de datos: ~/.dixi-tower. Las instalaciones anteriores al nombre Dixi Tower
+# usaban ~/.agentes: si solo existe esa, se sigue usando.
+if [ -n "${DIXI_TOWER_HOME:-}" ]; then HOME_AG="$DIXI_TOWER_HOME"
+elif [ -n "${DIXI_AGENTES_HOME:-}" ]; then HOME_AG="$DIXI_AGENTES_HOME"
+elif [ -d "$HOME/.agentes" ] && [ ! -d "$HOME/.dixi-tower" ]; then HOME_AG="$HOME/.agentes"
+else HOME_AG="$HOME/.dixi-tower"; fi
+export DIXI_AGENTES_HOME="$HOME_AG"      # para que los programas auxiliares usen la misma
 REG="${DIXI_AGENTES_REGISTRO:-$HOME_AG/proyectos.json}"
-PROYECTOS_DIR="${DIXI_PROYECTOS_DIR:-$HOME/projects}"
-SESION="agentes"
-PUERTO="${DIXI_AGENTES_PUERTO:-4310}"
+PROYECTOS_DIR="${DIXI_TOWER_PROJECTS:-${DIXI_PROYECTOS_DIR:-$HOME/projects}}"
+export DIXI_PROYECTOS_DIR="$PROYECTOS_DIR"
+# Sesión tmux: «dixi-tower». Si aún vive una sesión «agentes» de antes del cambio de
+# nombre, se sigue usando para no perder de vista a los agentes ya encendidos.
+if [ -n "${DIXI_TOWER_SESSION:-}" ]; then SESION="$DIXI_TOWER_SESSION"
+elif tmux has-session -t '=agentes' 2>/dev/null && ! tmux has-session -t '=dixi-tower' 2>/dev/null; then SESION="agentes"
+else SESION="dixi-tower"; fi
+PUERTO="${DIXI_TOWER_PORT:-${DIXI_AGENTES_PUERTO:-4310}}"
 ETIQUETA="com.dixi-project.dixi-tower"
 ETIQUETA_ANTERIOR="com.dixi.torre-agentes"
 PLIST="$HOME/Library/LaunchAgents/$ETIQUETA.plist"
@@ -85,10 +97,10 @@ cmd_lanzar() {
   local forzar="" instr="" motor="" autonomia=""
   while [ $# -gt 0 ]; do
     case "$1" in
-      --forzar) forzar=1 ;;
-      --motor) motor="${2:?falta el motor (claude|codex)}"; shift ;;
-      --autonomia) autonomia="${2:?falta el nivel (supervisada|equilibrada|autonoma)}"; shift ;;
-      --instruccion) instr="${2:?falta el archivo de la instrucción}"; shift ;;
+      --forzar|--force) forzar=1 ;;
+      --motor|--engine) motor="${2:?falta el motor}"; shift ;;
+      --autonomia|--autonomy) autonomia="${2:?falta el nivel (supervisada|equilibrada|autonoma)}"; shift ;;
+      --instruccion|--instruction) instr="${2:?falta el archivo de la instrucción}"; shift ;;
       "") ;;
       *) echo "Opción desconocida: $1" >&2; exit 1 ;;
     esac
@@ -115,6 +127,10 @@ cmd_lanzar() {
 
   local fila titulo slug linea="" rama clave marca
   marca="$(date +%m%d%H%M)"
+  # Dos encargos libres en el mismo minuto no deben compartir carpeta ni rama.
+  local n_libre=2 marca_base="$marca"
+  while [ -d "$HOME_AG/worktrees/$p/libre-$marca" ]; do marca="$marca_base-$n_libre"; n_libre=$((n_libre+1)); done
+  [ "$id" = "free" ] && id="libre"
   if [ "$id" = "libre" ]; then
     if [ -z "$instr" ] || [ ! -s "$instr" ]; then
       echo "Sin tarea del tablero hace falta una instrucción." >&2; exit 1
@@ -255,15 +271,16 @@ cmd_eliminar() {
 }
 
 case "${1:-}" in
-  siguiente) cmd_siguiente "${2:?proyecto}" ;;
-  lanzar)    cmd_lanzar "${2:?proyecto}" "${3:?st-id o libre}" "${@:4}" ;;
-  estado)    cmd_estado ;;
-  ver)       cmd_ver "${2:?agente}" "${3:-}" ;;
-  decir)     cmd_decir "${2:?agente}" "${3:?mensaje}" ;;
-  detener)   cmd_detener "${2:?agente}" ;;
-  reanudar)  cmd_reanudar "${2:?agente}" ;;
-  eliminar)  cmd_eliminar "${2:?agente}" ;;
-  abrir)     echo "tmux attach -t $SESION    (Ctrl-b n: siguiente ventana · Ctrl-b d: salir sin detenerlos)" ;;
+  siguiente|next) cmd_siguiente "${2:?proyecto}" ;;
+  lanzar|launch) cmd_lanzar "${2:?proyecto}" "${3:?st-id o libre}" "${@:4}" ;;
+  estado|status) cmd_estado ;;
+  ver|show) cmd_ver "${2:?agente}" "${3:-}" ;;
+  decir|say) cmd_decir "${2:?agente}" "${3:?mensaje}" ;;
+  detener|stop) cmd_detener "${2:?agente}" ;;
+  reanudar|resume) cmd_reanudar "${2:?agente}" ;;
+  eliminar|delete) cmd_eliminar "${2:?agente}" ;;
+  doctor)    python3 "$DIR/doctor.py" "$PUERTO" "$PLIST" ;;
+  abrir|attach) echo "tmux attach -t $SESION    (Ctrl-b n: siguiente ventana · Ctrl-b d: salir sin detenerlos)" ;;
   panel)
     puerto="${2:-$PUERTO}"
     if panel_responde "$puerto"; then
@@ -275,10 +292,13 @@ case "${1:-}" in
     fi
     echo "Panel: http://localhost:$puerto/"
     ;;
-  servicio)
+  servicio|service)
+    if [ "$(uname)" != "Darwin" ]; then
+      echo "El servicio automático solo existe en macOS. En este sistema usa: dixi-tower panel" >&2; exit 1
+    fi
     dominio="gui/$(id -u)"
     case "${2:-estado}" in
-      instalar)
+      instalar|install)
         # El servicio sustituye a la ventana tmux del panel: arranca al iniciar sesión
         # y launchd lo relanza si se cae.
         if ventana_viva panel; then tmux kill-window -t "$SESION:panel"; fi
@@ -310,21 +330,49 @@ PYS
         if panel_responde; then echo "Servicio instalado. Panel: http://localhost:$PUERTO/"
         else echo "El servicio se instaló pero el panel no responde; revisa $HOME_AG/panel.log" >&2; exit 1; fi
         ;;
-      quitar)
+      quitar|uninstall)
         launchctl bootout "$dominio/$ETIQUETA" 2>/dev/null || true
         rm -f "$PLIST"
         echo "Servicio quitado. Para levantar el panel a mano: dixi-tower panel"
         ;;
-      reiniciar)
+      reiniciar|restart)
         launchctl kickstart -k "$dominio/$ETIQUETA" && sleep 2
         if panel_responde; then echo "Panel reiniciado: http://localhost:$PUERTO/"; else echo "El panel no responde; revisa $HOME_AG/panel.log" >&2; exit 1; fi
         ;;
-      estado)
+      estado|status)
         if [ -f "$PLIST" ]; then echo "Servicio: instalado ($PLIST)"; else echo "Servicio: no instalado"; fi
         if panel_responde; then echo "Panel: responde en http://localhost:$PUERTO/"; else echo "Panel: no responde"; fi
         ;;
       *) echo "Uso: dixi-tower servicio instalar|quitar|reiniciar|estado" >&2; exit 1 ;;
     esac
     ;;
-  *)         sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *)
+    case "${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}" in
+      es*) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
+      *) cat <<'AYUDA'
+Dixi Tower — local control tower for coding agents.
+Launches interactive sessions of your coding agent inside tmux, each in its own
+git worktree and branch. A project can have several agents at once: the first is
+named after the project, the next ones <project>@2, <project>@3…
+
+  dixi-tower panel [port]                      web panel (http://localhost:4310/)
+  dixi-tower service install|uninstall|restart|status   keep the panel always on (macOS)
+  dixi-tower doctor                            check requirements and installation
+  dixi-tower launch <project> free --instruction <file> [--engine E] [--autonomy A]
+  dixi-tower launch <project> <task-id> [--force] [--instruction <file>]
+  dixi-tower next <project>                    pending tasks of a project, by priority
+  dixi-tower status                            table of every agent
+  dixi-tower show <agent> [lines]              current screen of an agent
+  dixi-tower say <agent> "<message>"           type a message to an agent
+  dixi-tower stop <agent>                      close its session (keeps worktree and branch)
+  dixi-tower resume <agent>                    turn a stopped agent back on
+  dixi-tower delete <agent>                    remove a stopped agent and its worktree
+  dixi-tower attach                            how to watch the consoles live
+
+Engines: claude, codex, or your own (see the usage guide). Autonomy: supervised,
+balanced, autonomous. The Spanish command names (lanzar, estado, detener…) work too.
+AYUDA
+      ;;
+    esac
+    ;;
 esac

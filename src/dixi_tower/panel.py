@@ -31,10 +31,24 @@ from urllib.parse import quote, unquote
 import config
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-HOME_AG = os.environ.get("DIXI_AGENTES_HOME", os.path.expanduser("~/.agentes"))
-PROYECTOS_DIR = os.environ.get("DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects"))
+HOME_AG = config.HOME_AG
+PROYECTOS_DIR = config.entorno("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects"))
 REGISTRO = os.environ.get("DIXI_AGENTES_REGISTRO", os.path.join(HOME_AG, "proyectos.json"))
-SESION = "agentes"
+
+
+def sesion():
+    """Sesión tmux de los agentes. Se llama `dixi-tower`; si aún vive una sesión
+    `agentes` de antes del cambio de nombre, se sigue usando esa."""
+    fija = config.entorno("DIXI_TOWER_SESSION", "DIXI_AGENTES_SESION")
+    if fija:
+        return fija
+    vivas = sh("tmux", "list-sessions", "-F", "#S").splitlines()
+    return "agentes" if "agentes" in vivas and "dixi-tower" not in vivas else "dixi-tower"
+
+
+def nombre_motor(t, motor):
+    return t.get("motor_" + motor, motor)
+
 TABLERO = "https://task.dixi-project.com/"
 IDIOMAS = ("es", "en")
 COLUMNAS, FILAS = 140, 45
@@ -110,7 +124,7 @@ def pull_request(wt, rama):
 
 
 def ventanas_vivas():
-    return set(sh("tmux", "list-windows", "-t", SESION, "-F", "#W").splitlines())
+    return set(sh("tmux", "list-windows", "-t", sesion(), "-F", "#W").splitlines())
 
 
 def proyectos_con_estado():
@@ -208,7 +222,7 @@ def ansi_html(txt):
 
 
 def pantalla(proyecto):
-    destino = f"{SESION}:{proyecto}"
+    destino = f"{sesion()}:{proyecto}"
     if sh("tmux", "display-message", "-p", "-t", destino, "#{window_width}x#{window_height}") != f"{COLUMNAS}x{FILAS}":
         sh("tmux", "resize-window", "-t", destino, "-x", str(COLUMNAS), "-y", str(FILAS))
     crudo = sh("tmux", "capture-pane", "-e", "-p", "-t", destino, "-S", "-150")
@@ -228,7 +242,7 @@ _pantallas = {}   # agente → (huella de su pantalla, cuándo cambió por últi
 def estado_por_pantalla(agente):
     """Para motores sin hooks de estado (Codex): trabajando si su pantalla cambió
     hace poco, en pausa si lleva unos segundos quieta. Es una aproximación."""
-    huella = hash(sh("tmux", "capture-pane", "-p", "-t", f"{SESION}:{agente}"))
+    huella = hash(sh("tmux", "capture-pane", "-p", "-t", f"{sesion()}:{agente}"))
     anterior, cambio = _pantallas.get(agente, (None, time.time()))
     if huella != anterior:
         cambio = time.time()
@@ -251,7 +265,7 @@ def ligero():
         viva = ag in vivas
         estado = d.get("estado", "lanzando") if viva else "cerrado"
         edad = max(0, int(time.time() - d.get("actualizado", time.time())))
-        if viva and (d.get("config") or {}).get("motor") == "codex":
+        if viva and ((d.get("config") or {}).get("motor") or "claude") != "claude":
             estado, edad = estado_por_pantalla(ag)
         agentes.append({
             "agente": ag,
@@ -302,7 +316,7 @@ def lista(idioma):
             f'data-estado="{a["estado"]}" data-rango="{RANGO[a["estado"]]}" data-edad="{a["edad"]}" '
             f'data-nombre="{e(a["agente"].lower(), quote=True)}" data-busca="{e(busca, quote=True)}">'
             f'<i aria-hidden="true"></i><span class="n">{e(a["agente"])}</span>'
-            f'<span class="s">{e(t["estado_" + a["estado"]])} · {e(hace(a["edad"], t))} · {e(t["motor_" + a["motor"]])}</span>'
+            f'<span class="s">{e(t["estado_" + a["estado"]])} · {e(hace(a["edad"], t))} · {e(nombre_motor(t, a["motor"]))}</span>'
             f'<span class="t">{e(a["titulo"])}</span></button></li>'
         )
     out.append(f'</ul><p id="nada" class="vacio" hidden>{e(t["sin_resultados"])}</p>')
@@ -352,7 +366,7 @@ def ficha(idioma, agente):
     else:
         filas.append((t["pr"], f'<span class="tenue">{e(t["pr_ninguno"])}</span>'))
     conf = config.de_agente(agente)
-    filas.append((t["motor"], e(t["motor_" + conf["motor"]])))
+    filas.append((t["motor"], e(nombre_motor(t, conf["motor"]))))
     filas.append((t["autonomia"], e(t["autonomia_" + conf["autonomia"]])))
     u = config.uso(agente) if conf["motor"] == "claude" else {}
     partes = []
@@ -364,7 +378,7 @@ def ficha(idioma, agente):
         partes.append(e(t["uso_contexto"].format(n=f'{u["contexto_libre"]:.0f}')))
     if partes:
         filas.append((t["uso"], " · ".join(partes)))
-    elif conf["motor"] == "codex":
+    elif conf["motor"] != "claude":
         filas.append((t["uso"], f'<span class="tenue">{e(t["uso_codex"])}</span>'))
     sub = conf["subagentes"]
     filas.append((t["subagentes"], e(t["subagentes_max"].format(n=sub["max"]) if sub["permitidos"] else t["subagentes_no"])))
@@ -517,7 +531,7 @@ def lanzar(datos):
     if tarea == "libre" and not instr:
         return 400, "Sin tarea del tablero hace falta una instrucción."
     args = ["bash", os.path.join(DIR, "agentes.sh"), "lanzar", p, tarea]
-    if datos.get("motor") in config.MOTORES:
+    if datos.get("motor") in config.motores_disponibles():
         args += ["--motor", datos["motor"]]
     if datos.get("autonomia") in config.AUTONOMIAS:
         args += ["--autonomia", datos["autonomia"]]
@@ -571,7 +585,7 @@ def accion(datos):
     p = datos.get("proyecto")
     if not isinstance(p, str) or p not in proyectos_con_estado() or p not in ventanas_vivas():
         return 404, "agente desconocido o sin ventana"
-    destino = f"{SESION}:{p}"
+    destino = f"{sesion()}:{p}"
     if datos.get("detener") is True:
         subprocess.run(["bash", os.path.join(DIR, "agentes.sh"), "detener", p], capture_output=True, timeout=15)
         return 200, "detenido"
@@ -679,6 +693,9 @@ button.peligro.armado{background:var(--rojo);border-color:var(--rojo);color:var(
 #term a:hover{color:#79c0ff}
 .ayuda{margin:8px 0 0;font-size:12px;color:var(--tenue)}
 #abrir-nuevo{padding:9px 12px}
+#dictar{display:inline-flex;align-items:center;gap:6px}
+#dictar.grabando{background:var(--rojo);border-color:var(--rojo);color:var(--sobre-azul)}
+#ayuda-dictado{color:var(--rojo)}
 input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--borde);border-radius:6px;background:var(--fondo);color:var(--texto);font:13.5px/1.4 inherit;font-family:inherit}
 .par{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
 .ficha header .b{margin-left:auto;padding:5px 10px;font-size:12px}
@@ -843,6 +860,47 @@ JS = """
     var v=txt.value;if(!sel||!v.trim())return;
     txt.value='';borradores[sel]='';accion({proyecto:sel,texto:v});
   });
+  // ── Dictado: mantener presionada la barra espaciadora (con la caja vacía) o el botón.
+  // Usa el reconocimiento de voz del navegador; el texto queda en la caja, no se envía solo.
+  var Rec=window.SpeechRecognition||window.webkitSpeechRecognition,mic=$('dictar'),ayudaVoz=$('ayuda-dictado'),
+      rec=null,dictando=false,esperaVoz=null,baseVoz='';
+  if(!Rec)mic.hidden=true;
+  function idiomaVoz(){
+    var n=navigator.language||lang;
+    return n.toLowerCase().indexOf(lang)===0?n:(lang==='es'?'es-ES':'en-US');
+  }
+  function empezarVoz(){
+    if(!Rec||dictando||!sel)return;
+    baseVoz=txt.value?txt.value.replace(/ *$/,' '):'';
+    rec=new Rec();rec.lang=idiomaVoz();rec.continuous=true;rec.interimResults=true;
+    rec.onresult=function(ev){
+      var dicho='';
+      for(var i=0;i<ev.results.length;i++)dicho+=ev.results[i][0].transcript;
+      txt.value=baseVoz+dicho.replace(/^ +/,'');
+    };
+    rec.onerror=function(ev){
+      if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){ayudaVoz.textContent=ayudaVoz.dataset.permiso;ayudaVoz.hidden=false;}
+    };
+    rec.onend=function(){dictando=false;mic.classList.remove('grabando');sugerir(propuesta);txt.focus();};
+    try{rec.start();}catch(e){return;}
+    dictando=true;mic.classList.add('grabando');ayudaVoz.hidden=true;txt.placeholder=txt.dataset.escuchando;
+  }
+  function terminarVoz(){if(rec&&dictando){try{rec.stop();}catch(e){}}}
+  mic.addEventListener('pointerdown',function(ev){ev.preventDefault();txt.focus();empezarVoz();});
+  ['pointerup','pointerleave','pointercancel'].forEach(function(n){mic.addEventListener(n,terminarVoz);});
+  txt.addEventListener('keydown',function(ev){
+    if(ev.key!==' '||ev.altKey||ev.metaKey||ev.ctrlKey||!Rec)return;
+    if(dictando||esperaVoz){ev.preventDefault();ev.stopImmediatePropagation();return;}
+    if(txt.value!=='')return;                 // con texto, la barra espaciadora escribe un espacio
+    ev.preventDefault();ev.stopImmediatePropagation();
+    esperaVoz=setTimeout(function(){esperaVoz='activo';empezarVoz();},300);
+  });
+  txt.addEventListener('keyup',function(ev){
+    if(ev.key!==' ')return;
+    if(esperaVoz&&esperaVoz!=='activo')clearTimeout(esperaVoz);
+    esperaVoz=null;terminarVoz();
+  });
+
   // ── Autocompletado de comandos «/» del motor, del proyecto y del usuario
   var sug=$('sugerencias'),catalogo={},visiblesSug=[],activo=0;
   function cargarComandos(p){
@@ -1017,7 +1075,7 @@ def pagina(idioma):
         for i in IDIOMAS
     )
     opciones = "".join(f'<option value="{v}">{e(t["orden_" + v])}</option>' for v in ("atencion", "nombre", "reciente"))
-    op_motor = "".join(f'<option value="{m}">{e(t["motor_" + m])}</option>' for m in config.MOTORES)
+    op_motor = "".join(f'<option value="{m}">{e(nombre_motor(t, m))}</option>' for m in config.motores_disponibles())
     op_autonomia = "".join(f'<option value="{a}">{e(t["autonomia_" + a])}</option>' for a in config.AUTONOMIAS)
     teclas = "".join(
         f'<button type="button" class="b" data-tecla="{k}">{e(v)}</button>'
@@ -1070,13 +1128,15 @@ def pagina(idioma):
     <pre id="term" tabindex="0"></pre>
     <form id="consola">
       <ul id="sugerencias" role="listbox" aria-label="{e(t["comandos"], quote=True)}" data-proyecto="{e(t["comando_proyecto"], quote=True)}" data-usuario="{e(t["comando_usuario"], quote=True)}" data-motor="{e(t["comando_motor"], quote=True)}" hidden></ul>
-      <textarea name="texto" rows="2" placeholder="{e(t["escribir"], quote=True)}" aria-label="{e(t["escribir"], quote=True)}" data-base="{e(t["escribir"], quote=True)}" data-sugerida="{e(t["sugerida"], quote=True)}"></textarea>
+      <textarea name="texto" rows="2" placeholder="{e(t["escribir"], quote=True)}" aria-label="{e(t["escribir"], quote=True)}" data-base="{e(t["escribir"], quote=True)}" data-sugerida="{e(t["sugerida"], quote=True)}" data-escuchando="{e(t["dictado_escuchando"], quote=True)}"></textarea>
       <div class="botones">
         <button type="submit" class="b primario">{e(t["enviar"])}</button>
+        <button type="button" class="b" id="dictar" title="{e(t["dictado_aviso"], quote=True)}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M8 10.5a2.5 2.5 0 0 0 2.5-2.5V4a2.5 2.5 0 0 0-5 0v4A2.5 2.5 0 0 0 8 10.5Zm4-2.5a.75.75 0 0 1 1.5 0 5.5 5.5 0 0 1-4.75 5.45V15a.75.75 0 0 1-1.5 0v-1.55A5.5 5.5 0 0 1 2.5 8 .75.75 0 0 1 4 8a4 4 0 0 0 8 0Z"/></svg> {e(t["dictar"])}</button>
         <span class="teclas"><span class="tenue">{e(t["teclas"])}</span>{teclas}</span>
         <button type="button" class="b peligro" data-detener data-normal="{e(t["detener"], quote=True)}" data-confirmar="{e(t["confirmar"], quote=True)}">{e(t["detener"])}</button>
       </div>
       <p class="ayuda">{e(t["teclado"])}</p>
+      <p class="ayuda" id="ayuda-dictado" role="status" data-permiso="{e(t["dictado_permiso"], quote=True)}" hidden></p>
     </form>
     <div id="apagado" hidden>
       <span>{e(t["pantalla_vacia"])}</span>
@@ -1223,7 +1283,7 @@ class Manejador(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    PUERTO = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("DIXI_AGENTES_PUERTO", "4310"))
+    PUERTO = int(sys.argv[1]) if len(sys.argv) > 1 else int(config.entorno("DIXI_TOWER_PORT", "DIXI_AGENTES_PUERTO", "4310"))
     servidor = ThreadingHTTPServer(("127.0.0.1", PUERTO), Manejador)
     print(f"Panel de la torre en http://localhost:{PUERTO}/  (Ctrl-C para detener)")
     try:

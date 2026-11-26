@@ -106,7 +106,8 @@ def main():
         "#!/usr/bin/env bash",
         f"cd {q(wt)} || exit 1",
         # Garantiza el login de la suscripción: sin llaves de API ni proveedores en la nube.
-        "unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX OPENAI_API_KEY",
+        "unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX OPENAI_API_KEY"
+        if motor in config.MOTORES else ": # motor propio: su entorno no se toca",
         "export " + " ".join(f"{k}={q(v)}" for k, v in entorno.items()),
     ]
 
@@ -120,6 +121,16 @@ def main():
             orden += f" \"$(cat {q(sys.argv[3])})\""
         else:
             orden += f" --resume {sesion}" if sesion_ok else " --continue"
+    elif motor not in config.MOTORES:
+        # Motor definido por el usuario: su propio comando, tal cual lo escribió.
+        propio = config.motores_propios().get(motor)
+        if not propio:
+            sys.exit(f"El motor «{motor}» ya no está definido en la configuración.")
+        if modo == "inicial":
+            plantilla, encargo = propio["comando"], f'"$(cat {q(sys.argv[3])})"'
+        else:
+            plantilla, encargo = propio.get("reanudar") or propio["comando"], q("Continúa con el encargo anterior.")
+        orden = "exec " + plantilla.replace("{instruccion}", encargo).replace("{reglas}", f'"$(cat {q(reglas)})"')
     else:
         opciones = opciones_codex(agente, autonomia, conf["subagentes"], reglas)
         if modo == "inicial":

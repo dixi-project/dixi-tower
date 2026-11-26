@@ -52,7 +52,7 @@
   "atajos": "Alt+↑ y Alt+↓ cambian de agente",
   "agentes": "Agentes",
   "sugerida": "{texto}   ⇥ Tab para usar esta sugerencia del agente",
-  "teclado": "Teclado: con la caja vacía, ↑ ↓ Enter y Esc van directo al agente, y Tab toma su sugerencia. Cuando el agente te necesita, 1, 2 y 3 eligen la opción del menú.",
+  "teclado": "Teclado: con la caja vacía, ↑ ↓ Enter y Esc van directo al agente, Tab toma su sugerencia y mantener presionada la barra espaciadora dicta. Cuando el agente te necesita, 1, 2 y 3 eligen la opción del menú.",
   "nuevo": "＋ Nuevo agente",
   "nuevo_titulo": "Lanzar un agente nuevo",
   "nuevo_nota": "Se crea una rama y un worktree nuevos para el proyecto. El agente trabaja con tu suscripción y termina en un pull request; nunca integra ni despliega.",
@@ -104,12 +104,16 @@
   "config_nota": "Valores con los que nace cada agente nuevo. Los agentes que ya existen conservan los suyos; se cambian en sus Ajustes.",
   "guardar": "Guardar",
   "error_config": "No se pudo guardar la configuración.",
-  "uso_codex": "no disponible con Codex; se ve en el pie de su consola",
+  "uso_codex": "no disponible con este motor; si lo muestra, está en el pie de su consola",
   "codex_nota": "Con Codex: su sandbox protege .git, así que en supervisada y equilibrada te pedirá aprobar cada commit y en autónoma lo aprueba un revisor automático. Los límites de uso no se pueden aplicar todavía, el tope de subagentes aplica al encender el agente, y su estado en la lista es aproximado.",
   "comandos": "Comandos",
   "comando_proyecto": "del proyecto",
   "comando_usuario": "tuyo",
   "comando_motor": "del motor",
   "tope_revision": "Tope de tareas en revisión por proyecto",
-  "tope_revision_ayuda": "Solo aplica a proyectos con tasks/TASKS.md: no se lanza un agente nuevo si el proyecto tiene más tareas en revisión que este número, salvo que lo fuerces al lanzar. 0 lo desactiva."
+  "tope_revision_ayuda": "Solo aplica a proyectos con tasks/TASKS.md: no se lanza un agente nuevo si el proyecto tiene más tareas en revisión que este número, salvo que lo fuerces al lanzar. 0 lo desactiva.",
+  "dictar": "Dictar",
+  "dictado_escuchando": "Escuchando… suelta para terminar",
+  "dictado_permiso": "El navegador no tiene permiso para usar el micrófono. Actívalo para este sitio y vuelve a intentar.",
+  "dictado_aviso": "Mantén presionado para dictar. Usa el reconocimiento de voz de tu navegador: en Chrome el audio se transcribe en servidores de Google."
 }
