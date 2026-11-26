@@ -8,7 +8,9 @@
 #   tests/smoke.sh
 set -uo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DT="$AQUI/dixi-tower"
+# Con DIXI_TOWER_BIN y DIXI_TOWER_SRC se prueba una instalación en vez del repositorio.
+DT="${DIXI_TOWER_BIN:-$AQUI/dixi-tower}"
+SRC="${DIXI_TOWER_SRC:-$AQUI/src/dixi_tower}"
 T="$(mktemp -d "${TMPDIR:-/tmp}/dixi-tower-smoke.XXXXXX")"
 export DIXI_TOWER_HOME="$T/datos" DIXI_TOWER_PROJECTS="$T/proyectos" DIXI_TOWER_SESSION="dixi-tower-smoke-$$"
 unset DIXI_AGENTES_HOME DIXI_PROYECTOS_DIR DIXI_AGENTES_REGISTRO
@@ -56,7 +58,7 @@ debe "se puede lanzar un motor definido por el usuario" "'$DT' launch simple fre
 sleep 1
 debe "recibe el encargo en su propio comando" "grep -q -- '--task Fix the README' '$T/ultimo-miagente.txt'"
 debe "guardar la configuración no borra los motores propios" "python3 -c \"
-import sys; sys.path.insert(0, '$AQUI/src/dixi_tower'); import config
+import sys; sys.path.insert(0, '$SRC'); import config
 config.guardar_global({'tope_revision': 1}); assert 'miagente' in config.motores_disponibles()\""
 
 echo "Tope de tareas en revisión"
@@ -73,25 +75,25 @@ debe "eliminar un agente encendido se niega" "! '$DT' delete simple"
 debe "ya limpio y detenido, se elimina y conserva la rama" "rm '$WT/nuevo.txt'; '$DT' stop simple && '$DT' delete simple && [ ! -f '$E/simple.json' ] && git -C '$T/proyectos/simple' branch --list 'agente/*' | grep -q agente/"
 
 echo "Panel"
-debe "renderiza la página y la lista en los dos idiomas" "cd '$AQUI/src/dixi_tower' && python3 -B -c \"
+debe "renderiza la página y la lista en los dos idiomas" "cd '$SRC' && python3 -B -c \"
 import panel
 for i in ('es', 'en'):
     assert 'Dixi Tower' in panel.pagina(i) and 'con_tareas' in panel.lista(i)
 assert panel.sesion() == '$DIXI_TOWER_SESSION'\""
-debe "rechaza acciones inválidas" "cd '$AQUI/src/dixi_tower' && python3 -B -c \"
+debe "rechaza acciones inválidas" "cd '$SRC' && python3 -B -c \"
 import panel
 assert panel.accion({'lanzar': True, 'proyecto': '../x'})[0] == 400
 assert panel.accion({'eliminar': True, 'proyecto': 'nope'})[0] == 404\""
-debe "ofrece el motor propio y los comandos del motor" "cd '$AQUI/src/dixi_tower' && python3 -B -c \"
+debe "ofrece el motor propio y los comandos del motor" "cd '$SRC' && python3 -B -c \"
 import panel
 assert 'miagente' in panel.pagina('en')
 assert any(c['c'] == '/model' for c in panel.comandos('en', 'con_tareas'))\""
 
-debe "guarda un adjunto sin salirse de su carpeta" "cd '$AQUI/src/dixi_tower' && python3 -B -c \"
+debe "guarda un adjunto sin salirse de su carpeta" "cd '$SRC' && python3 -B -c \"
 import os, panel
 r = panel.guardar_adjunto('con_tareas', '../../fuera/mi foto.png', b'x')
 assert os.path.dirname(r) == os.path.join(panel.HOME_AG, 'adjuntos', 'con_tareas') and os.path.isfile(r) and ' ' not in os.path.basename(r)\""
-debe "el explorador no sale de la carpeta personal ni muestra ocultos" "cd '$AQUI/src/dixi_tower' && python3 -B -c \"
+debe "el explorador no sale de la carpeta personal ni muestra ocultos" "cd '$SRC' && python3 -B -c \"
 import json, os, panel
 assert panel.explorar('/etc')[0] == 403
 d = json.loads(panel.explorar(os.path.expanduser('~'))[1])

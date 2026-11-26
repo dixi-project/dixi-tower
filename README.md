@@ -53,6 +53,10 @@ The full guide (commands, settings, internals, security of the panel) is in [doc
 
 The panel listens on `127.0.0.1` only, rejects requests whose `Host` header is not local, and requires a token for every action that writes. Anyone who can open the panel can give instructions to your agents: do not expose it through a tunnel or proxy.
 
+## License
+
+[MIT](LICENSE) © 2026 Dixi Project.
+
 ## Links
 
 - [Roadmap](ROADMAP.md)

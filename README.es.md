@@ -53,6 +53,10 @@ La guía completa (comandos, configuración, piezas internas y seguridad del pan
 
 El panel escucha solo en `127.0.0.1`, rechaza peticiones cuya cabecera `Host` no sea local y exige un token para toda acción que escribe. Quien pueda abrir el panel puede dar instrucciones a tus agentes: no lo expongas por túnel ni proxy.
 
+## Licencia
+
+[MIT](LICENSE) © 2026 Dixi Project.
+
 ## Links
 
 - [Hoja de ruta](ROADMAP.md)

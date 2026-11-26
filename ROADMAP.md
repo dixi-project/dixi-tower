@@ -21,7 +21,7 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 
 - [ ] Publicar en PyPI e instalar con `uv tool install dixi-tower` o `pipx install dixi-tower`. El paquete ya está definido en `pyproject.toml`; falta probar una instalación real.
 - [x] `dixi-tower doctor`: revisa requisitos, motores e instalación. Falta comprobar que el motor tiene sesión iniciada.
-- [ ] Elegir licencia.
+- [x] Licencia MIT.
 
 ### 3. Motores
 
