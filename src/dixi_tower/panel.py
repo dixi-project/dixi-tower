@@ -251,6 +251,41 @@ def estado_por_pantalla(agente):
     return ("trabajando" if quieta < 10 else "en_pausa"), quieta
 
 
+# Textos con los que Codex pide una respuesta de la persona.
+CODEX_ESPERA = ("Would you like to run the following command?", "Would you like to make the following edits?",
+                "Press enter to confirm or esc to cancel", "Trust this folder?", "enter continue · esc")
+
+
+def estado_codex(agente, pantalla=None):
+    """Estado de un agente Codex leyendo su pantalla: sus avisos de aprobación y el
+    estado de su pie («Working» / «Ready»). También guarda el uso de la cuenta que
+    muestra ese pie. Si no reconoce nada, recurre a si la pantalla cambia."""
+    if pantalla is None:
+        pantalla = sh("tmux", "capture-pane", "-p", "-t", f"{sesion()}:{agente}")
+    cola = "\n".join(pantalla.splitlines()[-30:])
+    _, quieta = estado_por_pantalla(agente)
+    sesion_5h, semana = re.search(r"5h (\d+)% left", cola), re.search(r"weekly (\d+)%", cola)
+    if sesion_5h or semana:
+        uso = {"actualizado": time.time()}
+        if sesion_5h:
+            uso["sesion"] = 100 - int(sesion_5h.group(1))
+        if semana:
+            uso["semana"] = 100 - int(semana.group(1))
+        try:
+            os.makedirs(os.path.join(HOME_AG, "uso"), exist_ok=True)
+            with open(os.path.join(HOME_AG, "uso", f"{agente}.json"), "w", encoding="utf-8") as fh:
+                json.dump(uso, fh)
+        except OSError:
+            pass
+    if any(p in cola for p in CODEX_ESPERA):
+        return "te_necesita", quieta
+    if "esc to interrupt" in cola or "· Working ·" in cola:
+        return "trabajando", quieta
+    if "· Ready ·" in cola:
+        return "en_pausa", quieta
+    return estado_por_pantalla(agente)
+
+
 def ligero():
     """Estado de todos los agentes sin tocar git: sirve para listas de decenas."""
     vivas = ventanas_vivas()
@@ -265,7 +300,10 @@ def ligero():
         viva = ag in vivas
         estado = d.get("estado", "lanzando") if viva else "cerrado"
         edad = max(0, int(time.time() - d.get("actualizado", time.time())))
-        if viva and ((d.get("config") or {}).get("motor") or "claude") != "claude":
+        motor = (d.get("config") or {}).get("motor") or "claude"
+        if viva and motor == "codex":
+            estado, edad = estado_codex(ag)
+        elif viva and motor != "claude":
             estado, edad = estado_por_pantalla(ag)
         agentes.append({
             "agente": ag,
@@ -368,7 +406,7 @@ def ficha(idioma, agente):
     conf = config.de_agente(agente)
     filas.append((t["motor"], e(nombre_motor(t, conf["motor"]))))
     filas.append((t["autonomia"], e(t["autonomia_" + conf["autonomia"]])))
-    u = config.uso(agente) if conf["motor"] == "claude" else {}
+    u = config.uso(agente) if conf["motor"] in config.MOTORES else {}
     partes = []
     for clave, tope in (("semana", conf["limites"]["semana"]), ("sesion", conf["limites"]["sesion"])):
         if isinstance(u.get(clave), (int, float)):

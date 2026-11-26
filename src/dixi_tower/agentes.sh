@@ -211,7 +211,11 @@ cmd_ver() {
 
 cmd_decir() {
   ventana_viva "$1" || { echo "No hay ventana viva para $1" >&2; exit 1; }
-  tmux send-keys -t "$SESION:$1" -l "$2"
+  # Como el panel: pegado entre corchetes y una pausa antes de Enter. Codex trata el
+  # texto que llega muy rápido como un pegado y se tragaría un Enter inmediato.
+  printf '%s' "$2" | tmux load-buffer -b dixi-tower-decir -
+  tmux paste-buffer -p -d -b dixi-tower-decir -t "$SESION:$1"
+  sleep 0.3
   tmux send-keys -t "$SESION:$1" Enter
 }
 

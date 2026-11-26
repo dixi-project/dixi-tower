@@ -59,12 +59,19 @@ En los tres niveles el agente sigue sin poder integrar, desplegar ni leer secret
 | | Claude Code | Codex |
 |---|---|---|
 | Reglas del agente | `--append-system-prompt` | `-c developer_instructions=…` |
-| Estado en el panel | Hooks en cada evento: exacto | Aviso de fin de turno (`notify`) y cambios en su pantalla: aproximado |
+| Estado en el panel | Hooks en cada evento: exacto | Se lee de su pantalla: avisos de aprobación y el estado de su pie |
 | Barrera propia (`guardia.py`) | Sí | No: la barrera es el sandbox de Codex |
-| Límites de uso | Sí (Claude los entrega a la barra de estado) | No: Codex no los expone a un script; se ven en el pie de su consola |
+| Límites de uso | Se muestran y se aplican | Se muestran (leídos de su pie), pero no se pueden aplicar |
 | Commits | Sin fricción | Su sandbox protege `.git`: cada commit pide aprobación, salvo en autónoma |
 
-El soporte de Codex está **sin validar con una sesión real**: el arranque se probó con un binario falso y su sandbox con comandos sueltos.
+El soporte de Codex se validó con una sesión real (Codex 0.167): arranque, aviso de fin de turno, aprobación de commits, estado en el panel y retomar la sesión.
+
+Qué esperar con Codex:
+
+- **La primera vez en cada repositorio pide confiar en la carpeta.** Se responde desde el panel con Enter. Codex guarda esa decisión en su propia configuración.
+- **Cada commit pide aprobación** en supervisada y equilibrada, porque su sandbox protege `.git`. El panel muestra al agente como «Te necesita».
+- **En su pie aparece «1 warning»**: avisa que, al recibir opciones por línea de comandos, no usa su servidor compartido en segundo plano. Es inofensivo.
+- Dixi Tower le desactiva el aviso de «actualización disponible», que dejaría esperando a un agente desatendido.
 
 ## Cómo funciona
 

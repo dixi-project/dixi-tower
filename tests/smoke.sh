@@ -67,6 +67,7 @@ debe "forzándolo, pasa" "'$DT' launch con_tareas aaaaaa000003 --force"
 
 echo "Ciclo de vida"
 WT="$(python3 -c "import json; print(json.load(open('$E/simple.json'))['worktree'])")"   # hay varios agentes en «simple»
+debe "decir le escribe al agente" "'$DT' say simple 'mensaje-de-prueba' && sleep 0.5 && tmux capture-pane -p -t '=$DIXI_TOWER_SESSION:simple' | grep -q mensaje-de-prueba"
 debe "detener cierra la ventana" "'$DT' stop simple && ! vivas | grep -qx simple"
 debe "eliminar se niega si hay archivos sin commit" "echo x > '$WT/nuevo.txt'; ! '$DT' delete simple"
 debe "reanudar lo vuelve a encender" "'$DT' resume simple && vivas | grep -qx simple"
@@ -89,6 +90,13 @@ import panel
 assert 'miagente' in panel.pagina('en')
 assert any(c['c'] == '/model' for c in panel.comandos('en', 'con_tareas'))\""
 
+debe "lee el estado de Codex en su pantalla" "cd '$SRC' && python3 -B -c \"
+import panel
+pie = 'GPT · Ready · 5h 90% left · weekly 70% left'
+assert panel.estado_codex('con_tareas', 'x\\n' + pie)[0] == 'en_pausa'
+assert panel.estado_codex('con_tareas', 'x\\n• Working (3s • esc to interrupt)')[0] == 'trabajando'
+assert panel.estado_codex('con_tareas', 'Would you like to run the following command?\\nPress enter to confirm or esc to cancel')[0] == 'te_necesita'
+u = panel.config.uso('con_tareas'); assert u['semana'] == 30 and u['sesion'] == 10\""
 debe "guarda un adjunto sin salirse de su carpeta" "cd '$SRC' && python3 -B -c \"
 import os, panel
 r = panel.guardar_adjunto('con_tareas', '../../fuera/mi foto.png', b'x')

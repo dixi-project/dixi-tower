@@ -19,7 +19,8 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 
 ### 2. Instalación
 
-- [ ] Publicar en PyPI e instalar con `uv tool install dixi-tower` o `pipx install dixi-tower`. El paquete ya está definido en `pyproject.toml`; falta probar una instalación real.
+- [x] Instalación con `uv tool install` o `pipx install` desde GitHub, probada con la prueba de humo contra lo instalado.
+- [ ] Publicar en PyPI (`uv tool install dixi-tower`).
 - [x] `dixi-tower doctor`: revisa requisitos, motores e instalación. Falta comprobar que el motor tiene sesión iniciada.
 - [x] Licencia MIT.
 
@@ -27,8 +28,8 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 
 - [x] Motores propios: cualquier agente de terminal, definido en la configuración.
 - [ ] Definir motores propios desde el panel (hoy se editan en `config.json`).
-- [ ] **Validar Codex con una sesión real**: aviso de fin de turno, retomar sesión, comportamiento con commits (su sandbox protege `.git`).
-- [ ] Límites de uso con Codex: hoy no se pueden aplicar porque no los expone a un script.
+- [x] Codex validado con una sesión real: arranque, fin de turno, aprobación de commits, estado en el panel y retomar la sesión.
+- [ ] Límites de uso con Codex: ya se muestran (leídos de su pie); falta aplicarlos, quizá con sus hooks.
 - [ ] Comandos «/» del motor: la lista es curada a mano; buscar una fuente que no se desfase.
 
 ### 4. Idioma

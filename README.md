@@ -8,7 +8,7 @@ Dixi Tower is a local control tower for coding agents. It launches coding-agent 
 
 It runs on the subscription you already have: no API keys, no cloud service, nothing leaves your machine except what the agents themselves do.
 
-> **Status: alpha, private.** macOS only for now. Codex support has not been validated with a real session yet. See the [roadmap](ROADMAP.md).
+> **Status: alpha.** Tested on macOS with Claude Code and Codex. Linux should work with `dixi-tower panel`, but it has not been tested. See the [roadmap](ROADMAP.md).
 
 ## What you get
 
@@ -31,17 +31,24 @@ It runs on the subscription you already have: no API keys, no cloud service, not
 
 ## Quickstart
 
-From a clone of this repository:
+Install with [uv](https://docs.astral.sh/uv/) or pipx, straight from GitHub:
 
 ```sh
-./dixi-tower doctor               # check requirements
-./dixi-tower service install      # panel always on at http://localhost:4310/ (macOS)
-./dixi-tower panel                # or: run the panel inside tmux (any system)
+uv tool install git+https://github.com/dixi-project/dixi-tower
+# or: pipx install git+https://github.com/dixi-project/dixi-tower
+```
+
+Then:
+
+```sh
+dixi-tower doctor               # check requirements
+dixi-tower service install      # panel always on at http://localhost:4310/ (macOS)
+dixi-tower panel                # or: run the panel inside tmux (any system)
 ```
 
 Open the panel and click **＋ New agent**. Pick a repository from your projects folder (`~/projects` by default, change it with `DIXI_TOWER_PROJECTS`), type an instruction and launch.
 
-Run `./dixi-tower` with no arguments to list every command. The panel and the help are available in English and Spanish; messages from the launcher are still in Spanish.
+Run `dixi-tower` with no arguments to list every command. The panel and the help are available in English and Spanish; messages from the launcher are still in Spanish.
 
 ## How it works
 

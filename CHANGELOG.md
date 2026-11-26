@@ -31,12 +31,15 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 
 ### Corregido
 
+- Con Codex, el panel mostraba «Trabajando» mientras esperaba una aprobación; ahora lee su pantalla y muestra «Te necesita».
+- Con Codex, un evento interno podía guardar un id de sesión equivocado y romper «encender de nuevo».
+- Con Codex, un aviso de actualización dejaba esperando al agente.
+- `dixi-tower decir` no enviaba el mensaje a Codex.
 - Dos encargos libres lanzados en el mismo minuto chocaban al compartir carpeta y rama.
 
 ### Conocido
 
-- El soporte de Codex no se ha validado con una sesión real.
-- Solo macOS.
+- Probado solo en macOS.
 
 ## Links
 

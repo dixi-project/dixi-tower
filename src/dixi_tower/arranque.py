@@ -42,6 +42,8 @@ def opciones_codex(agente, autonomia, subagentes, reglas):
     toml = lambda v: json.dumps(v, ensure_ascii=False)   # una cadena o lista JSON es TOML válido
     ops = list(CODEX_OPCIONES[autonomia]) + [
         "--no-alt-screen",                                # conserva el historial para el panel
+        # Un aviso de «actualización disponible» bloquearía la sesión hasta que alguien responda.
+        "-c", "check_for_update_on_startup=false",
         # En workspace-write no hay red salvo que se pida; sin ella no publica su rama ni abre el PR.
         "-c", "sandbox_workspace_write.network_access=true",
         "-c", "notify=" + toml(["python3", os.path.join(DIR, "hooks", "codex-notify.py"), agente, HOME_AG]),

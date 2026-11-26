@@ -8,7 +8,7 @@ Dixi Tower es una torre de control local para agentes de código. Lanza sesiones
 
 Funciona con la suscripción que ya tienes: sin llaves de API, sin servicio en la nube, y nada sale de tu máquina salvo lo que hagan los propios agentes.
 
-> **Estado: alfa, privado.** Por ahora solo macOS. El soporte de Codex todavía no se ha validado con una sesión real. Ver la [hoja de ruta](ROADMAP.md).
+> **Estado: alfa.** Probado en macOS con Claude Code y Codex. En Linux debería funcionar con `dixi-tower panel`, pero no se ha probado. Ver la [hoja de ruta](ROADMAP.md).
 
 ## Qué ofrece
 
@@ -31,17 +31,24 @@ Funciona con la suscripción que ya tienes: sin llaves de API, sin servicio en l
 
 ## Inicio rápido
 
-Desde un clon de este repositorio:
+Instálalo con [uv](https://docs.astral.sh/uv/) o pipx, directo desde GitHub:
 
 ```sh
-./dixi-tower doctor               # revisa requisitos
-./dixi-tower servicio instalar    # panel siempre encendido en http://localhost:4310/ (macOS)
-./dixi-tower panel                # o bien: el panel dentro de tmux (cualquier sistema)
+uv tool install git+https://github.com/dixi-project/dixi-tower
+# o bien: pipx install git+https://github.com/dixi-project/dixi-tower
+```
+
+Después:
+
+```sh
+dixi-tower doctor               # revisa requisitos
+dixi-tower servicio instalar    # panel siempre encendido en http://localhost:4310/ (macOS)
+dixi-tower panel                # o bien: el panel dentro de tmux (cualquier sistema)
 ```
 
 Abre el panel y pulsa **＋ Nuevo agente**. Elige un repositorio de tu carpeta de proyectos (`~/projects` por defecto; se cambia con `DIXI_TOWER_PROJECTS`), escribe una instrucción y lánzalo.
 
-Ejecuta `./dixi-tower` sin argumentos para ver todos los comandos.
+Ejecuta `dixi-tower` sin argumentos para ver todos los comandos.
 
 ## Cómo funciona
 
