@@ -69,7 +69,7 @@ El soporte de Codex está **sin validar con una sesión real**: el arranque se p
 | Pieza | Qué hace |
 |---|---|
 | `dixi-tower` | Crea el worktree y la rama, arma el prompt y abre el agente en una ventana de la sesión tmux `agentes` |
-| `~/.agentes/proyectos.json` | Registro de proyectos (repo, rama base, comando de flujo, tope en revisión). Un repo de la carpeta de proyectos se da de alta solo al lanzarlo (`registro.py`) |
+| `~/.agentes/proyectos.json` | Registro de proyectos (repo, rama base y comando de flujo). Un repo de la carpeta de proyectos se da de alta solo al lanzarlo (`registro.py`) |
 | `worker-settings.json` | Permisos y hooks que se inyectan al agente con `--settings`, sin tocar el repo del proyecto |
 | `worker-prompt.md` | Reglas del agente: una tarea, termina en PR, nunca integra ni despliega |
 | `hooks/estado-hook.py` | Escribe `~/.agentes/estado/<agente>.json` en cada evento y avisa por macOS cuando el agente se detiene |
@@ -82,6 +82,22 @@ El soporte de Codex está **sin validar con una sesión real**: el arranque se p
 | `hooks/guardia.py` | Bloquea merge, push a la rama base, force push, deploys, AWS de escritura y lectura de secretos |
 | `panel.py` | Panel web: lee los archivos de estado, git y tmux; textos en `locales/` |
 | `tareas.py`, `estado.py`, `ocupado.py` | Lectura de `tasks/TASKS.md`, tabla de estado y control de worktree en uso |
+
+## Reglas del agente
+
+Todo agente recibe las reglas de `worker-prompt.md`: un encargo, una rama, termina en un pull request, nunca integra, despliega ni lee secretos.
+
+Para añadir las tuyas, crea `~/.agentes/reglas.md`. Su contenido se agrega al final de las reglas de cada agente la próxima vez que se enciende. Sirve para convenciones de tu equipo: idioma de los commits, tamaño máximo de un pull request, qué archivos no se tocan.
+
+## Integración con tareas (opcional)
+
+Dixi Tower funciona sin ningún gestor de tareas: cada agente nace con una instrucción libre y una rama `agente/<resumen>-<fecha>`.
+
+Si un proyecto tiene `tasks/TASKS.md` con el formato de [sys_task](https://task.dixi-project.com/) (líneas `- [ ] **Título** <!-- st:id -->`), se activa sola una integración:
+
+- El formulario de «Nuevo agente» ofrece las tareas pendientes, por prioridad.
+- La rama se llama `st/<id>-<resumen>`, que es la convención con la que sys_task mueve la tarjeta.
+- Se puede fijar un **tope de tareas en revisión** por proyecto en Configuración: con más tareas en `[r]` que el tope, no se lanza un agente nuevo salvo que se fuerce. De fábrica es 0, desactivado.
 
 ## Comandos «/» en el panel
 
@@ -100,7 +116,7 @@ Con Codex solo se ofrecen los del motor. ↑ ↓ eligen, Tab o Enter completan, 
 - **Nombre del agente**: el primero de un proyecto se llama como el proyecto; los siguientes, `<proyecto>@2`, `<proyecto>@3`… Nunca hay dos agentes sobre la misma tarea.
 - **Ramas**: con tarea del tablero, `st/<id>-<slug>` (mueve la tarjeta en sys_task); con instrucción libre, `agente/<slug>-<fecha>` (no mueve nada).
 - **Ciclo de un agente**: lanzar → (detener ⇄ reanudar) → eliminar. Eliminar exige que esté detenido y sin archivos sin commit; borra su worktree y su estado, y **conserva la rama** con sus commits.
-- **Tope**: no se lanza en un proyecto con más de `max_en_revision` tareas en `[r]`, salvo `--forzar`.
+- **Tope en revisión** (solo con la integración de tareas): ver «Integración con tareas».
 - **Los datos de trabajo** viven en `~/.agentes/` (`estado/`, `run/`, `worktrees/`), fuera de cualquier repositorio.
 
 ## Variables

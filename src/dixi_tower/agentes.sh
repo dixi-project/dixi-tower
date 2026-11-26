@@ -74,7 +74,9 @@ cmd_siguiente() {
   registrar "$p"
   repo="$(campo "$p" repo)"; base="$(campo "$p" base)"
   traer "$repo" "$base"
-  echo "En revisión [r]: $(tareas "$repo" "$base" revision) (tope $(campo "$p" max_en_revision))"
+  local tope; tope="$(python3 "$DIR/config.py" valor tope_revision)"
+  if [ "$tope" = "0" ]; then echo "En revisión [r]: $(tareas "$repo" "$base" revision) (sin tope)"
+  else echo "En revisión [r]: $(tareas "$repo" "$base" revision) (tope $tope)"; fi
   tareas "$repo" "$base" lista
 }
 
@@ -96,7 +98,7 @@ cmd_lanzar() {
   registrar "$p"
   local repo base comando max
   repo="$(campo "$p" repo)"; base="$(campo "$p" base)"
-  comando="$(campo "$p" comando)"; max="$(campo "$p" max_en_revision)"
+  comando="$(campo "$p" comando)"; max="$(python3 "$DIR/config.py" valor tope_revision)"
 
   # Nombre del agente: el del proyecto, o <proyecto>@N si ya hay otros vivos.
   local ag="$p" n=2
@@ -106,8 +108,8 @@ cmd_lanzar() {
   local ref; ref="$(ref_base "$repo" "$base")"
 
   local en_rev; en_rev="$(tareas "$repo" "$base" revision)"
-  if [ "$en_rev" -gt "$max" ] && [ -z "$forzar" ]; then
-    echo "$p tiene $en_rev tareas en revisión (tope $max): primero revisa PRs, o lánzalo forzando el tope." >&2
+  if [ "$max" != "0" ] && [ "$en_rev" -gt "$max" ] && [ -z "$forzar" ]; then
+    echo "$p tiene $en_rev tareas en revisión y tu tope es $max. Para lanzarlo de todos modos, marca «Lanzar aunque el proyecto supere su tope» (o usa --forzar). El tope se cambia en Configuración; 0 lo desactiva." >&2
     exit 1
   fi
 

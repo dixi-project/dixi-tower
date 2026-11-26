@@ -10,10 +10,11 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 
 ### 1. Quitar lo que es propio de Dixi
 
-- [ ] `worker-prompt.md` da por hecho `tasks/TASKS.md`, casillas de sys_task y que integrar despliega a producción: dejarlo genérico y permitir que cada proyecto añada sus reglas.
-- [ ] La lectura de tareas (`tareas.py`) y las ramas `st/<id>-…` son la integración con sys_task: convertirla en una integración opcional. Sin ella, todo agente nace con instrucción libre.
-- [ ] El tope de «tareas en revisión» depende de esa misma integración.
-- [ ] Carpeta de datos `~/.agentes` y variables `DIXI_AGENTES_*`: decidir si se renombran a `~/.dixi-tower` y `DIXI_TOWER_*`, con migración.
+- [x] Reglas del agente genéricas; las de cada instalación van en `~/.agentes/reglas.md`.
+- [x] La integración con tareas es opcional y se activa sola si el proyecto tiene `tasks/TASKS.md`; sin ella, todo agente nace con instrucción libre.
+- [x] El tope de «tareas en revisión» es configurable y viene desactivado.
+- [ ] Carpeta de datos `~/.agentes`, sesión tmux `agentes` y variables `DIXI_AGENTES_*`: renombrar a `~/.dixi-tower`, `dixi-tower` y `DIXI_TOWER_*`, con migración. Conviene hacerlo sin agentes encendidos.
+- [ ] Las reglas por proyecto (hoy solo hay reglas por instalación).
 
 ### 2. Instalación
 

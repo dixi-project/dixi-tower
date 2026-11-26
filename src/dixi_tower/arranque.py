@@ -77,7 +77,18 @@ def main():
             base = json.load(open(REGISTRO, encoding="utf-8")).get(proyecto, {}).get("base")
         except Exception:
             base = None
-    reglas = os.path.join(DIR, "worker-prompt.md")
+    # Reglas del agente: las de Dixi Tower más las que el usuario haya añadido.
+    texto = open(os.path.join(DIR, "worker-prompt.md"), encoding="utf-8").read()
+    try:
+        propias = open(config.ruta_reglas_propias(), encoding="utf-8").read().strip()
+    except OSError:
+        propias = ""
+    if propias:
+        texto = texto.rstrip() + "\n\n" + propias + "\n"
+    reglas = os.path.join(HOME_AG, "run", f"{agente}.reglas.md")
+    os.makedirs(os.path.dirname(reglas), exist_ok=True)
+    with open(reglas, "w", encoding="utf-8") as fh:
+        fh.write(texto)
 
     entorno = {
         "DIXI_AGENTE": "1",

@@ -339,9 +339,12 @@ def ficha(idioma, agente):
     if conf.get("repo"):
         rev = cacheado(("rev", proyecto), 60, lambda r=conf["repo"], b=base: en_revision(r, b))
         if rev is not None:
-            tope = conf.get("max_en_revision", 3)
-            aviso = ' class="alerta"' if rev > tope else ""
-            filas.append((t["en_revision"], f"<span{aviso}>{e(t['en_revision_valor'].format(n=rev, max=tope))}</span>"))
+            tope = config.global_()["tope_revision"]
+            if tope:
+                aviso = ' class="alerta"' if rev > tope else ""
+                filas.append((t["en_revision"], f"<span{aviso}>{e(t['en_revision_valor'].format(n=rev, max=tope))}</span>"))
+            elif rev:
+                filas.append((t["en_revision"], e(str(rev))))
     pr = (cacheado(("pr", a["rama"]), 90, lambda w=wt, r=a["rama"]: pull_request(w, r)) if hay_wt and a["rama"] else None) or {}
     url = pr.get("url", "")
     if url.startswith("https://"):
@@ -946,6 +949,7 @@ JS = """
       $('aj-sub').checked=c.subagentes.permitidos;$('aj-submax').value=c.subagentes.max;
       $('aj-submax').disabled=!c.subagentes.permitidos;
       $('aj-semana').value=c.limites.semana;$('aj-sesion').value=c.limites.sesion;
+      $('aj-global').hidden=!!agente;$('aj-tope').value=c.tope_revision||0;
       aj.showModal();
     }).catch(mal);
   }
@@ -958,6 +962,7 @@ JS = """
     var c={motor:$('aj-motor').value,autonomia:$('aj-autonomia').value,
       subagentes:{permitidos:$('aj-sub').checked,max:parseInt($('aj-submax').value,10)||1},
       limites:{semana:parseInt($('aj-semana').value,10)||0,sesion:parseInt($('aj-sesion').value,10)||0}};
+    if(!ajAgente)c.tope_revision=parseInt($('aj-tope').value,10)||0;
     fetch('/api/accion',{method:'POST',cache:'no-store',
       headers:{'Content-Type':'application/json','X-Panel-Token':token},
       body:JSON.stringify({guardar_config:true,agente:ajAgente,config:c})})
@@ -1118,6 +1123,10 @@ def pagina(idioma):
     </div>
     <p class="tenue">{e(t["limites_ayuda"])}</p>
     <p class="tenue">{e(t["codex_nota"])}</p>
+    <div id="aj-global">
+      <label>{e(t["tope_revision"])}<input type="number" id="aj-tope" min="0" max="99" step="1"></label>
+      <p class="tenue">{e(t["tope_revision_ayuda"])}</p>
+    </div>
     <p id="aj-error" role="alert" data-generico="{e(t["error_config"], quote=True)}" hidden></p>
     <div class="botones">
       <button type="button" class="b" id="aj-cancelar">{e(t["cancelar"])}</button>

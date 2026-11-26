@@ -18,6 +18,12 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Barrera de seguridad y hooks de estado para Claude Code.
 - Panel como servicio de macOS.
 
+### Cambiado
+
+- Las reglas del agente ya no dan por hecho la forma de trabajar de Dixi; cada instalación añade las suyas en `~/.agentes/reglas.md`.
+- El tope de tareas en revisión pasa a la configuración y viene desactivado; su mensaje explica cómo saltarlo.
+- El registro de proyectos vive en `~/.agentes/proyectos.json`, no dentro del paquete.
+
 ### Conocido
 
 - El soporte de Codex no se ha validado con una sesión real.

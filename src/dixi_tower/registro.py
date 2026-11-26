@@ -44,7 +44,6 @@ datos[nombre] = {
     "repo": repo,
     "base": base,
     "comando": "/build" if os.path.exists(os.path.join(repo, ".claude", "commands", "build.md")) else "",
-    "max_en_revision": 3,
 }
 os.makedirs(os.path.dirname(registro), exist_ok=True)
 with open(registro, "w", encoding="utf-8") as fh:

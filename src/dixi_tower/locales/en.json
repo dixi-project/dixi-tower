@@ -109,5 +109,7 @@
   "comandos": "Commands",
   "comando_proyecto": "project",
   "comando_usuario": "yours",
-  "comando_motor": "engine"
+  "comando_motor": "engine",
+  "tope_revision": "In-review task limit per project",
+  "tope_revision_ayuda": "Only applies to projects with tasks/TASKS.md: no new agent is launched if the project has more tasks in review than this number, unless you force it at launch. 0 turns it off."
 }

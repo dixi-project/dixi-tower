@@ -109,5 +109,7 @@
   "comandos": "Comandos",
   "comando_proyecto": "del proyecto",
   "comando_usuario": "tuyo",
-  "comando_motor": "del motor"
+  "comando_motor": "del motor",
+  "tope_revision": "Tope de tareas en revisión por proyecto",
+  "tope_revision_ayuda": "Solo aplica a proyectos con tasks/TASKS.md: no se lanza un agente nuevo si el proyecto tiene más tareas en revisión que este número, salvo que lo fuerces al lanzar. 0 lo desactiva."
 }

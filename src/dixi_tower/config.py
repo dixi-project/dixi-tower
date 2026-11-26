@@ -7,6 +7,7 @@ Dos niveles:
 
 Uso como programa:
   config.py global                          imprime la configuración global
+  config.py valor <clave>                   imprime un valor global (p. ej. tope_revision)
   config.py agente <agente>                 imprime la de un agente
   config.py nueva [--motor M] [--autonomia A]   global + lo indicado, validada
 """
@@ -25,6 +26,9 @@ PREDETERMINADA = {
     # Porcentajes de uso de la cuenta a partir de los cuales el agente deja de
     # trabajar. 0 = sin límite. «sesion» es la ventana de 5 horas.
     "limites": {"semana": 80, "sesion": 0},
+    # Solo global. Con la integración de tareas (tasks/TASKS.md): no lanzar en un
+    # proyecto que tenga más de este número de tareas en revisión. 0 = sin tope.
+    "tope_revision": 0,
 }
 
 
@@ -52,6 +56,7 @@ def normalizar(datos, base=None):
             "semana": _entero(lim.get("semana"), 0, 100, base["limites"]["semana"]),
             "sesion": _entero(lim.get("sesion"), 0, 100, base["limites"]["sesion"]),
         },
+        "tope_revision": _entero(datos.get("tope_revision"), 0, 99, base.get("tope_revision", 0)),
     }
 
 
@@ -103,6 +108,11 @@ def guardar_agente(agente, datos):
     return estado["config"]
 
 
+def ruta_reglas_propias():
+    """Reglas que el usuario añade a las de todo agente (archivo opcional)."""
+    return os.path.join(HOME_AG, "reglas.md")
+
+
 def uso(agente):
     """Último uso de la cuenta que reportó la sesión del agente (puede no existir)."""
     return _leer(os.path.join(HOME_AG, "uso", f"{agente}.json"))
@@ -120,6 +130,9 @@ def limite_alcanzado(agente):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if args[:1] == ["valor"] and len(args) == 2:
+        print(global_().get(args[1], ""))
+        sys.exit(0)
     if args[:1] == ["agente"] and len(args) == 2:
         salida = de_agente(args[1])
     elif args[:1] == ["nueva"]:
