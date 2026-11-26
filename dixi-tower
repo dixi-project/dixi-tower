@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Lanzador para usar Dixi Tower directamente desde el repositorio, sin instalarlo.
+aqui="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec bash "$aqui/src/dixi_tower/agentes.sh" "$@"

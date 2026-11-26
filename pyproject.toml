@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dixi-tower"
+version = "0.1.0"
+description = "Local control tower for coding agents: launch, watch and steer Claude Code and Codex sessions from one web panel."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Dixi Project" }]
+keywords = ["agents", "claude-code", "codex", "tmux", "developer-tools"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://dixi-tower.dixi-project.com/"
+Repository = "https://github.com/dixi-project/dixi-tower"
+
+[project.scripts]
+dixi-tower = "dixi_tower.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+dixi_tower = ["*.sh", "*.json", "*.md", "hooks/*.py", "locales/*.json"]
