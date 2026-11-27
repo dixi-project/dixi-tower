@@ -1,8 +1,19 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+    <img src="docs/assets/logo-light.svg" alt="Dixi Tower" width="420">
+  </picture>
+</p>
+
+<p align="center"><strong>A local control tower for your coding agents.</strong></p>
+
 # Dixi Tower
 
 **English** · [Español](README.es.md)
 
 ## Purpose
+
+When you run several coding agents at once, in different repositories, it is hard to know which one is working, which one finished and which one is waiting for your answer. Dixi Tower puts them all in one place.
 
 Dixi Tower is a local control tower for coding agents. It launches coding-agent sessions on your own machine (Claude Code, Codex, or any agent you run from a terminal), each in its own git worktree and branch, and lets you watch and steer all of them from one web panel at `http://localhost:4310/`.
 
