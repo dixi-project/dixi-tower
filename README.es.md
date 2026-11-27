@@ -9,7 +9,7 @@
 
 # Dixi Tower
 
-[English](README.md) · **Español**
+[English](README.md) · **Español** · **[Manual de operación](docs/manual.es.md)**
 
 ## Propósito
 
@@ -58,6 +58,8 @@ dixi-tower panel                # o bien: el panel dentro de tmux (cualquier sis
 ```
 
 Abre el panel y pulsa **＋ Nuevo agente**. Elige un repositorio de tu carpeta de proyectos (`~/projects` por defecto; se cambia con `DIXI_TOWER_PROJECTS`), escribe una instrucción y lánzalo.
+
+> **Paso a paso, con capturas:** el [manual de operación](docs/manual.es.md) cubre la instalación, la configuración y el uso diario.
 
 Ejecuta `dixi-tower` sin argumentos para ver todos los comandos. Todo está en español e inglés, según el idioma de tu sistema (o `DIXI_TOWER_LANG=es|en`).
 
