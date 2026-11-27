@@ -23,9 +23,12 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Comandos, ayuda y mensajes en inglés y en español, según el idioma del sistema; `dixi-tower doctor`.
 - Prueba de humo (`tests/smoke.sh`) y prueba en Linux con Docker (`tests/linux.sh`).
 - Linux: avisos de escritorio con `notify-send`.
+- Logo, imagen social e ícono del panel.
 
 ### Cambiado
 
+- El enlace al tablero de tareas del panel es opcional: se configura con la clave `tablero`.
+- Textos del panel pensados para quien empieza: el mensaje sin agentes indica el botón «＋ Nuevo agente» y el contador «Agentes activos» pasa a «Trabajando».
 - Las reglas del agente ya no dan por hecho la forma de trabajar de Dixi; cada instalación añade las suyas en `~/.agentes/reglas.md`.
 - El tope de tareas en revisión pasa a la configuración y viene desactivado; su mensaje explica cómo saltarlo.
 - El registro de proyectos vive en `~/.agentes/proyectos.json`, no dentro del paquete.
@@ -37,6 +40,10 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Con Codex, un aviso de actualización dejaba esperando al agente.
 - `dixi-tower decir` no enviaba el mensaje a Codex.
 - `dixi-tower detener` decía «Detenido» aunque el agente no existiera.
+- `dixi-tower panel` ignoraba `DIXI_TOWER_HOME`, `DIXI_TOWER_PROJECTS` y `DIXI_TOWER_SESSION` si tmux ya estaba corriendo.
+- Con Claude Code, el panel mostraba «Lanzando» mientras Claude pedía confiar en la carpeta; ahora muestra «Te necesita».
+- Con Codex, el uso de la cuenta decía «no disponible» antes de que Codex lo informara.
+- Un título largo se cortaba a mitad de palabra; ahora se corta en un espacio y termina en «…».
 - Dos encargos libres lanzados en el mismo minuto chocaban al compartir carpeta y rama.
 
 ### Conocido

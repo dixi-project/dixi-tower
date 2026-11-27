@@ -147,6 +147,7 @@ If a project has a `tasks/TASKS.md` in the [sys_task](https://task.dixi-project.
 - The **New agent** form offers the pending tasks, by priority.
 - The branch is named `st/<id>-<summary>`, the convention sys_task uses to move the card.
 - You can set an **in-review task limit** per project in Settings: with more tasks in `[r]` than the limit, no new agent is launched unless forced. It is 0 (off) by default.
+- To keep your board one click away, add its address to `config.json` in the data folder: `"tablero": "https://tasks.example.com/"`. The panel then shows an “Open the task board” link; without that key there is no link.
 
 ## Slash commands in the panel
 

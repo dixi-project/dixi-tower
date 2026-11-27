@@ -99,6 +99,11 @@ assert panel.estado_codex('con_tareas', 'x\\n' + pie)[0] == 'en_pausa'
 assert panel.estado_codex('con_tareas', 'x\\n• Working (3s • esc to interrupt)')[0] == 'trabajando'
 assert panel.estado_codex('con_tareas', 'Would you like to run the following command?\\nPress enter to confirm or esc to cancel')[0] == 'te_necesita'
 u = panel.config.uso('con_tareas'); assert u['semana'] == 30 and u['sesion'] == 10\""
+debe "un título largo se corta en un espacio, con puntos suspensivos" "cd '$SRC' && echo 'Add a search box above the product list that filters products by name as you type. Plain JavaScript' | python3 -B tareas.py slug | cut -f1 | grep -q 'Plain…\$'"
+debe "ve que Claude espera al arrancar (confiar en la carpeta)" "cd '$SRC' && python3 -B -c \"
+import panel
+assert panel.espera_al_arrancar('x', 'Quick safety check\\n> No, exit\\n  Yes, I trust this folder\\nEnter to confirm')
+assert not panel.espera_al_arrancar('x', 'Welcome to Claude Code')\""
 debe "guarda un adjunto sin salirse de su carpeta" "cd '$SRC' && python3 -B -c \"
 import os, panel
 r = panel.guardar_adjunto('con_tareas', '../../fuera/mi foto.png', b'x')
@@ -108,6 +113,8 @@ import json, os, panel
 assert panel.explorar('/etc')[0] == 403
 d = json.loads(panel.explorar(os.path.expanduser('~'))[1])
 assert d['padre'] is None and not any(n.startswith('.') for n in d['carpetas'] + d['archivos'])\""
+P=$(python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1', 0)); print(s.getsockname()[1])")
+debe "el panel en tmux usa la carpeta de datos indicada y sirve su ícono" "'$DT' panel $P >/dev/null && for i in \$(seq 1 20); do curl -s -m 1 http://127.0.0.1:$P/es/lista | grep -q con_tareas && break; sleep 0.5; done && curl -s http://127.0.0.1:$P/es/lista | grep -q con_tareas && curl -s -D - -o /dev/null http://127.0.0.1:$P/favicon.svg | grep -qi 'image/svg+xml'"
 debe "eliminar un agente borra también sus adjuntos" "'$DT' stop con_tareas && '$DT' delete con_tareas && [ ! -d '$DIXI_TOWER_HOME/adjuntos/con_tareas' ]"
 
 echo

@@ -297,12 +297,18 @@ case "${1:-}" in
   abrir|attach) m attach "s=$SESION" ;;
   panel)
     puerto="${2:-$PUERTO}"
+    # Una ventana nueva de tmux hereda el entorno del servidor tmux, no el de esta
+    # terminal: el panel recibe la carpeta de datos, la de proyectos y la sesión a mano.
+    cmd_panel="env DIXI_TOWER_HOME=$(printf %q "$HOME_AG") DIXI_TOWER_PROJECTS=$(printf %q "$PROYECTOS_DIR") DIXI_TOWER_SESSION=$(printf %q "$SESION")"
+    [ -n "${DIXI_TOWER_NOTIFY:-}" ] && cmd_panel+=" DIXI_TOWER_NOTIFY=$(printf %q "$DIXI_TOWER_NOTIFY")"
+    [ -n "${DIXI_TOWER_LANG:-}" ] && cmd_panel+=" DIXI_TOWER_LANG=$(printf %q "$DIXI_TOWER_LANG")"
+    cmd_panel+=" python3 $(printf %q "$DIR/panel.py") $puerto"
     if panel_responde "$puerto"; then
       m panel_corriendo
     elif tmux has-session -t "$SESION" 2>/dev/null; then
-      tmux new-window -d -t "$SESION" -n panel "python3 '$DIR/panel.py' $puerto"
+      tmux new-window -d -t "$SESION" -n panel "$cmd_panel"
     else
-      tmux new-session -d -s "$SESION" -n panel "python3 '$DIR/panel.py' $puerto"
+      tmux new-session -d -s "$SESION" -n panel "$cmd_panel"
     fi
     m panel_url "url=http://localhost:$puerto/"
     ;;

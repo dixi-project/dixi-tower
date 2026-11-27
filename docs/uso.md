@@ -147,6 +147,7 @@ Si un proyecto tiene `tasks/TASKS.md` con el formato de [sys_task](https://task.
 - El formulario de «Nuevo agente» ofrece las tareas pendientes, por prioridad.
 - La rama se llama `st/<id>-<resumen>`, que es la convención con la que sys_task mueve la tarjeta.
 - Se puede fijar un **tope de tareas en revisión** por proyecto en Configuración: con más tareas en `[r]` que el tope, no se lanza un agente nuevo salvo que se fuerce. De fábrica es 0, desactivado.
+- Para tener a mano tu tablero, agrega su dirección en `config.json` de la carpeta de datos: `"tablero": "https://task.ejemplo.com/"`. El panel muestra entonces el enlace «Abrir el tablero de tareas»; sin esa clave no aparece.
 
 ## Comandos «/» en el panel
 

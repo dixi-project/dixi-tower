@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <style>
+    .t { stroke: #23262b; } .tf { fill: #23262b; }
+    .a { stroke: #1f5fc4; } .af { fill: #1f5fc4; }
+    @media (prefers-color-scheme: dark) {
+      .t { stroke: #e6e8ec; } .tf { fill: #e6e8ec; }
+      .a { stroke: #5b9bff; } .af { fill: #5b9bff; }
+    }
+  </style>
+  <defs>
+    <mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect width="200" height="200" fill="#fff"/>
+      <rect x="86" y="-50" width="28" height="300" fill="#000"/>
+    </mask>
+  </defs>
+  <g fill="none" stroke-width="16" mask="url(#cut)">
+    <path class="t" d="M100 30A70 70 0 0 0 100 170"/>
+    <path class="a" d="M100 170A70 70 0 0 0 100 30"/>
+  </g>
+  <g class="af">
+    <rect x="92" y="4" width="16" height="44"/>
+    <rect x="70" y="48" width="60" height="10"/>
+    <path d="M64 64H136L124 96H76Z"/>
+    <path d="M90 96H110L114 142H86Z"/>
+  </g>
+  <rect class="tf" x="92" y="156" width="16" height="40"/>
+</svg>

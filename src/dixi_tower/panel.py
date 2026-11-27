@@ -50,7 +50,6 @@ def sesion():
 def nombre_motor(t, motor):
     return t.get("motor_" + motor, motor)
 
-TABLERO = "https://task.dixi-project.com/"
 IDIOMAS = ("es", "en")
 COLUMNAS, FILAS = 140, 45
 TECLAS = {"Enter", "Escape", "Up", "Down", "1", "2", "3"}
@@ -252,6 +251,17 @@ def estado_por_pantalla(agente):
     return ("trabajando" if quieta < 10 else "en_pausa"), quieta
 
 
+# Avisos de Claude Code antes de su primer hook (confiar en la carpeta, aceptar
+# condiciones): sin esto el panel lo dejaría en «lanzando» mientras te espera.
+CLAUDE_ARRANQUE = ("Yes, I trust this folder", "Enter to confirm", "Do you trust the files in this folder?")
+
+
+def espera_al_arrancar(agente, pantalla=None):
+    if pantalla is None:
+        pantalla = sh("tmux", "capture-pane", "-p", "-t", f"{sesion()}:{agente}")
+    return any(s in pantalla for s in CLAUDE_ARRANQUE)
+
+
 # Textos con los que Codex pide una respuesta de la persona.
 CODEX_ESPERA = ("Would you like to run the following command?", "Would you like to make the following edits?",
                 "Press enter to confirm or esc to cancel", "Trust this folder?", "enter continue · esc")
@@ -304,6 +314,8 @@ def ligero():
         motor = (d.get("config") or {}).get("motor") or "claude"
         if viva and motor == "codex":
             estado, edad = estado_codex(ag)
+        elif viva and motor == "claude" and estado == "lanzando" and espera_al_arrancar(ag):
+            estado = "te_necesita"
         elif viva and motor != "claude":
             estado, edad = estado_por_pantalla(ag)
         agentes.append({
@@ -418,7 +430,8 @@ def ficha(idioma, agente):
     if partes:
         filas.append((t["uso"], " · ".join(partes)))
     elif conf["motor"] != "claude":
-        filas.append((t["uso"], f'<span class="tenue">{e(t["uso_codex"])}</span>'))
+        clave = "uso_pendiente" if conf["motor"] == "codex" else "uso_codex"
+        filas.append((t["uso"], f'<span class="tenue">{e(t[clave])}</span>'))
     sub = conf["subagentes"]
     filas.append((t["subagentes"], e(t["subagentes_max"].format(n=sub["max"]) if sub["permitidos"] else t["subagentes_no"])))
     tope = config.limite_alcanzado(agente) if conf["motor"] == "claude" else ""
@@ -710,7 +723,7 @@ font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 .app{display:grid;grid-template-columns:330px minmax(0,1fr);height:100vh}
 aside{display:flex;flex-direction:column;min-height:0;background:var(--panel);border-right:1px solid var(--borde)}
 .marca{padding:16px 16px 10px}
-h1{margin:0;font-size:18px;letter-spacing:-.01em}
+h1{margin:0;font-size:18px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
 .marca p{margin:2px 0 0;color:var(--tenue);font-size:12.5px}
 .controles{display:grid;gap:8px;padding:0 16px 12px}
 input[type=search],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--borde);border-radius:6px;
@@ -1258,6 +1271,9 @@ def pagina(idioma):
         f'<button type="button" class="b" data-tecla="{k}">{e(v)}</button>'
         for k, v in (("Enter", "Enter"), ("Escape", t["tecla_esc"]), ("Up", "↑"), ("Down", "↓"), ("1", "1"), ("2", "2"), ("3", "3"))
     )
+    url_tablero = config.tablero()
+    enlace_tablero = (f'    <a href="{e(url_tablero, quote=True)}" target="_blank" rel="noopener">{e(t["tablero"])}</a>'
+                      if url_tablero else "")
     return f"""<!doctype html>
 <html lang="{idioma}">
 <head>
@@ -1268,13 +1284,14 @@ def pagina(idioma):
 <meta name="robots" content="noindex">
 <meta name="panel-token" content="{TOKEN}">
 <link rel="canonical" href="/{idioma}/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {alternos}<link rel="alternate" hreflang="x-default" href="/">
 <style>{CSS}</style>
 </head>
 <body>
 <div class="app">
 <aside aria-label="{e(t["agentes"], quote=True)}">
-  <div class="marca"><h1>{e(t["encabezado"])}</h1><p>{e(t["subtitulo"])}</p></div>
+  <div class="marca"><h1><img src="/favicon.svg" alt="" width="22" height="22">{e(t["encabezado"])}</h1><p>{e(t["subtitulo"])}</p></div>
   <div class="controles">
     <input type="search" id="filtro" placeholder="{e(t["filtro"], quote=True)}" aria-label="{e(t["filtro"], quote=True)}" autocomplete="off">
     <label>{e(t["orden"])}<select id="orden">{opciones}</select></label>
@@ -1286,7 +1303,7 @@ def pagina(idioma):
   </div>
   <div class="pie">
     <span>{e(t["actualizado"])} <time id="reloj"></time> · {e(t["atajos"])}</span>
-    <a href="{TABLERO}" target="_blank" rel="noopener">{e(t["tablero"])}</a>
+{enlace_tablero}
     <nav>{selector}</nav>
   </div>
 </aside>
@@ -1391,12 +1408,12 @@ def pagina(idioma):
 
 
 class Manejador(BaseHTTPRequestHandler):
-    def _enviar(self, codigo, cuerpo="", cabeceras=None):
+    def _enviar(self, codigo, cuerpo="", cabeceras=None, tipo="text/html; charset=utf-8", cache="no-store"):
         datos = cuerpo.encode("utf-8")
         self.send_response(codigo)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Type", tipo)
         self.send_header("Content-Length", str(len(datos)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache)
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
         for k, v in (cabeceras or {}).items():
@@ -1419,7 +1436,10 @@ class Manejador(BaseHTTPRequestHandler):
             orden = [p.split(";")[0].strip().lower()[:2] for p in pedido.split(",")]
             idioma = next((i for i in orden if i in IDIOMAS), IDIOMAS[0])
             return self._enviar(302, "", {"Location": f"/{idioma}/", "Vary": "Accept-Language"})
-        partes = [unquote(p) for p in ruta.split("/") if p]
+        if ruta == "/favicon.svg":
+            with open(os.path.join(DIR, "static", "favicon.svg"), encoding="utf-8") as f:
+                return self._enviar(200, f.read(), tipo="image/svg+xml", cache="max-age=86400")
+        partes =[unquote(p) for p in ruta.split("/") if p]
         if partes[:2] == ["api", "config"] and len(partes) <= 3:
             if len(partes) == 2:
                 return self._enviar(200, json.dumps({"config": config.global_()}))

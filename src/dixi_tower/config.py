@@ -104,6 +104,17 @@ def motores_disponibles():
     return list(MOTORES) + sorted(motores_propios())
 
 
+def tablero():
+    """Dirección de tu tablero de tareas (clave `tablero`), para enlazarlo desde el panel.
+
+    Opcional: sin ella el panel no muestra el enlace. Solo se aceptan http y https.
+    """
+    url = _leer(ruta_global()).get("tablero")
+    if isinstance(url, str) and url.strip().lower().startswith(("http://", "https://")):
+        return url.strip()
+    return None
+
+
 def _leer(ruta):
     try:
         with open(ruta, encoding="utf-8") as fh:
@@ -137,6 +148,8 @@ def guardar_global(datos):
     propios = motores_propios()          # se editan a mano en el archivo: no se pierden al guardar
     if propios:
         nueva["motores"] = propios
+    if tablero():
+        nueva["tablero"] = tablero()
     _escribir(ruta_global(), nueva)
     return nueva
 

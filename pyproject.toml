@@ -35,4 +35,4 @@ dixi-tower = "dixi_tower.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-dixi_tower = ["*.sh", "*.json", "*.md", "hooks/*.py", "locales/*.json"]
+dixi_tower = ["*.sh", "*.json", "*.md", "hooks/*.py", "locales/*.json", "static/*.svg"]

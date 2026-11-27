@@ -46,7 +46,9 @@ def main():
     modo = sys.argv[1] if len(sys.argv) > 1 else "lista"
     if modo == "slug":
         primera = next((l.strip() for l in sys.stdin.read().splitlines() if l.strip()), "")
-        titulo = " ".join(primera.split())[:90]
+        titulo = " ".join(primera.split())
+        if len(titulo) > 90:   # corta en un espacio y lo indica, en vez de partir una palabra
+            titulo = (titulo[:89].rsplit(" ", 1)[0] or titulo[:89]).rstrip(" ,.;:") + "…"
         print(f"{titulo}\t{slug(titulo) or 'tarea'}")
         return
     filas = leer()
