@@ -19,7 +19,7 @@ Dixi Tower is a local control tower for coding agents. It launches coding-agent 
 
 It runs on the subscription you already have: no API keys, no cloud service, nothing leaves your machine except what the agents themselves do.
 
-> **Status: alpha.** Tested on macOS with Claude Code and Codex, and on Linux (Debian 12). Windows works through WSL2 (not tested on a real Windows machine yet). On Linux and Windows run the panel with `dixi-tower panel`; the always-on service is macOS only. See the [roadmap](ROADMAP.md).
+> **Status: alpha.** Tested on macOS with Claude Code and Codex, and on Linux (Debian 12). On Windows it runs inside WSL2, tested on Windows Server 2025 with Ubuntu. On Linux and Windows run the panel with `dixi-tower panel`; the always-on service is macOS only. See the [roadmap](ROADMAP.md).
 
 ## What you get
 

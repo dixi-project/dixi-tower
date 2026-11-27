@@ -71,12 +71,13 @@ A line with ✗ tells you what is missing. Run `dixi-tower` with no arguments to
 
 ### On Windows (WSL2)
 
-Dixi Tower runs on Windows inside WSL2, the Linux that ships with Windows 10 and 11. The panel opens in your usual Windows browser. *WSL support has not been tested on a real Windows machine yet; if you try it, tell us how it went in an issue.*
+Dixi Tower runs on Windows inside WSL2, the Linux that ships with Windows 10 and 11. The panel opens in your usual Windows browser. Tested on Windows Server 2025 with Ubuntu: installation, `doctor`, the panel in Edge, a Claude Code agent and Windows notifications that open the agent on click.
 
 1. In PowerShell as administrator, install WSL with Ubuntu and restart when asked:
    ```powershell
    wsl --install
    ```
+   On Windows Server, `wsl --install` may only answer that WSL is not installed. In that case install the latest `wsl.*.x64.msi` from [WSL's releases](https://github.com/microsoft/WSL/releases), restart, and run `wsl --install -d Ubuntu`.
 2. Open **Ubuntu** from the Start menu and install the requirements:
    ```sh
    sudo apt update && sudo apt install -y tmux git python3 pipx gh

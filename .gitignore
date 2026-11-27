@@ -5,3 +5,6 @@ build/
 dist/
 *.egg-info/
 .DS_Store
+
+# Prueba de Windows en AWS: llave, contraseña e ids
+tests/windows/.estado/
