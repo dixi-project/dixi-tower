@@ -105,6 +105,8 @@ def main():
         "DIXI_AGENTE_BASE": base or "main",
         "DIXI_AGENTES_DIR": DIR,
         "DIXI_AGENTES_HOME": HOME_AG,
+        # Los hooks hablan al agente y avisan en el idioma con el que se lanzó.
+        "DIXI_TOWER_LANG": idioma(),
     }
     lineas = [
         "#!/usr/bin/env bash",

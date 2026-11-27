@@ -65,7 +65,7 @@ Ejecuta `dixi-tower` sin argumentos para ver todos los comandos. Todo está en e
 
 Cada agente es una sesión interactiva del motor dentro de una ventana de la sesión tmux `dixi-tower`. Dixi Tower inyecta permisos, hooks y reglas desde fuera, así que el repositorio del proyecto nunca se modifica. Los hooks reportan el estado de cada agente en `~/.dixi-tower/`, y el panel lee esos archivos, git y tmux.
 
-La guía completa (comandos, configuración, piezas internas y seguridad del panel) está en [docs/uso.md](docs/uso.md).
+¿Primera vez? El [manual de operación](docs/manual.es.md) te lleva por la instalación, la configuración y el uso diario, con capturas. La referencia completa (comandos, configuración, piezas internas y seguridad del panel) está en [docs/uso.md](docs/uso.md).
 
 ## Seguridad
 
@@ -79,4 +79,5 @@ El panel escucha solo en `127.0.0.1`, rechaza peticiones cuya cabecera `Host` no
 
 - [Hoja de ruta](ROADMAP.md)
 - [Registro de cambios](CHANGELOG.md)
+- [Manual de operación](docs/manual.es.md)
 - [Guía de uso](docs/uso.md)

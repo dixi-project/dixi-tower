@@ -189,4 +189,5 @@ Escucha solo en `127.0.0.1`, rechaza peticiones cuya cabecera `Host` no sea loca
 ## Links
 
 - [README](../README.es.md)
+- [Manual de operación](manual.es.md): paso a paso, con capturas
 - [Hoja de ruta](../ROADMAP.md)

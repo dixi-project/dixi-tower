@@ -12,8 +12,9 @@ import sys
 import urllib.request
 
 import config
+from mensajes import idioma
 
-ES = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").startswith("es")
+ES = idioma() == "es"   # DIXI_TOWER_LANG manda; si no está, el idioma del sistema
 T = lambda es, en: es if ES else en
 puerto, servicio = sys.argv[1], sys.argv[2]
 faltan = 0

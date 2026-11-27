@@ -24,6 +24,8 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Prueba de humo (`tests/smoke.sh`) y prueba en Linux con Docker (`tests/linux.sh`).
 - Linux: avisos de escritorio con `notify-send`.
 - Logo, imagen social e ícono del panel.
+- Manual de operación con capturas, en inglés y en español (`docs/manual.md`, `docs/manual.es.md`).
+- Reglas del agente en inglés (`worker-prompt.en.md`).
 
 ### Cambiado
 
@@ -44,6 +46,10 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Con Claude Code, el panel mostraba «Lanzando» mientras Claude pedía confiar en la carpeta; ahora muestra «Te necesita».
 - Con Codex, el uso de la cuenta decía «no disponible» antes de que Codex lo informara.
 - Un título largo se cortaba a mitad de palabra; ahora se corta en un espacio y termina en «…».
+- El encargo, las reglas, los bloqueos de la barrera y de los límites, y los avisos de escritorio estaban solo en español; ahora siguen el idioma del usuario.
+- `doctor` y la ayuda ignoraban `DIXI_TOWER_LANG`.
+- Cambiar el `#agente` de la dirección (por ejemplo, al hacer clic en un aviso) no cambiaba de agente si el panel ya estaba abierto.
+- Con Codex, el uso de la cuenta mostraba un límite que no se puede hacer cumplir.
 - Dos encargos libres lanzados en el mismo minuto chocaban al compartir carpeta y rama.
 
 ### Conocido

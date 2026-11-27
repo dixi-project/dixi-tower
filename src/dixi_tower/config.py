@@ -178,13 +178,14 @@ def uso(agente):
     return _leer(os.path.join(HOME_AG, "uso", f"{agente}.json"))
 
 
-def limite_alcanzado(agente):
+def limite_alcanzado(agente, idioma=None):
     """Texto del límite superado, o '' si el agente puede seguir."""
+    from mensajes import t
     lim, u = de_agente(agente)["limites"], uso(agente)
-    for clave, nombre in (("semana", "semanal"), ("sesion", "de sesión")):
+    for clave in ("semana", "sesion"):
         tope, valor = lim[clave], u.get(clave)
         if tope and isinstance(valor, (int, float)) and valor >= tope:
-            return f"uso {nombre} en {valor:.0f}% (límite {tope}%)"
+            return t("limite_texto", idioma, nombre=t("limite_" + clave, idioma), valor=f"{valor:.0f}", tope=tope)
     return ""
 
 

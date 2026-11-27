@@ -189,4 +189,5 @@ The panel listens on `127.0.0.1` only, rejects requests whose `Host` header is n
 ## Links
 
 - [README](../README.md)
+- [Operations manual](manual.md): step by step, with screenshots
 - [Roadmap](../ROADMAP.md)

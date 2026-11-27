@@ -28,6 +28,7 @@ def main():
     if not agente:
         return 0
     import config
+    from mensajes import t
 
     try:
         evento = json.load(sys.stdin)
@@ -60,27 +61,23 @@ def main():
 
     motivo = config.limite_alcanzado(agente)
     if motivo:
-        print(f"Límite de uso alcanzado: {motivo}. No ejecutes más herramientas: detente y dile a la "
-              "persona, en un mensaje breve, en qué punto quedó el trabajo. Puede subir el límite "
-              "de este agente desde el panel.", file=sys.stderr)
+        print(t("h_limite", motivo=motivo), file=sys.stderr)
         return 2
 
     herramienta = evento.get("tool_name", "")
     if herramienta in ABRE_SUBAGENTE or herramienta == "Workflow":
         sub = config.de_agente(agente)["subagentes"]
         if not sub["permitidos"]:
-            print("Este agente no tiene autorizado usar subagentes: haz el trabajo tú mismo.", file=sys.stderr)
+            print(t("h_sin_subagentes"), file=sys.stderr)
             return 2
         if herramienta == "Workflow":
             if sub["max"] < 20:
-                print(f"Los flujos multiagente no están autorizados con un tope de {sub['max']} subagentes: "
-                      "usa subagentes individuales.", file=sys.stderr)
+                print(t("h_workflow", max=sub["max"]), file=sys.stderr)
                 return 2
             return 0
         marcas = abiertos()
         if len(marcas) >= sub["max"]:
-            print(f"Ya hay {len(marcas)} subagentes abiertos y el máximo autorizado es {sub['max']}: "
-                  "espera a que termine alguno o haz esta parte tú mismo.", file=sys.stderr)
+            print(t("h_tope_subagentes", n=len(marcas), max=sub["max"]), file=sys.stderr)
             return 2
         guardar(marcas + [time.time()])
     return 0

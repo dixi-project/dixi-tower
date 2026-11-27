@@ -11,7 +11,9 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from avisos import avisar_escritorio  # noqa: E402
+from mensajes import t  # noqa: E402
 
 
 def main():
@@ -42,14 +44,14 @@ def main():
         d["detalle"] = f"{ev.get('tool_name', '')}: {str(pista)[:200]}"
     elif nombre == "Stop":
         d["estado"] = "en_pausa"
-        d["detalle"] = (ev.get("last_assistant_message") or "terminó su turno")[-300:]
-        avisar = "terminó su turno"
+        d["detalle"] = (ev.get("last_assistant_message") or t("aviso_fin"))[-300:]
+        avisar = t("aviso_fin")
     elif nombre == "Notification":
         msg = ev.get("message", "")
         if "waiting for your input" not in msg:
             d["estado"] = "te_necesita"
             d["detalle"] = msg[:300]
-            avisar = msg[:120] or "te necesita"
+            avisar = msg[:120] or t("aviso_necesita")
     elif nombre == "SessionEnd":
         d["estado"] = "cerrado"
     else:
@@ -74,7 +76,7 @@ def main():
     if avisar:
         if (os.environ.get("DIXI_TOWER_NOTIFY") or os.environ.get("DIXI_AGENTES_AVISOS") or "1") == "0":
             return
-        avisar_escritorio(f"Agente {agente}", avisar, agente)
+        avisar_escritorio(t("aviso_titulo", ag=agente), avisar, agente)
 
 
 try:

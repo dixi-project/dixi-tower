@@ -38,6 +38,7 @@ debe "doctor encuentra lo imprescindible" "'$DT' doctor"
 debe "la carpeta de datos es la indicada, no ~/.agentes" "'$DT' status | grep -q 'No agents' && [ -d '$DIXI_TOWER_HOME' ]"
 debe "los mensajes salen en el idioma del sistema" "('$DT' stop nope 2>&1; true) | grep -q 'Unknown agent' && (LANG=es_MX.UTF-8 '$DT' stop nope 2>&1; true) | grep -q 'No conozco al agente'"
 debe "DIXI_TOWER_LANG manda sobre el idioma del sistema" "(DIXI_TOWER_LANG=es '$DT' stop nope 2>&1; true) | grep -q 'No conozco'"
+debe "doctor también respeta DIXI_TOWER_LANG" "(DIXI_TOWER_LANG=es '$DT' doctor 2>&1; true) | grep -q 'Requisitos'"
 
 echo "Lanzar"
 debe "sin tasks/TASKS.md, con instrucción libre (comandos en inglés)" "'$DT' launch simple free --instruction '$T/encargo.txt'"
@@ -49,6 +50,11 @@ debe "Codex supervisado arranca en solo lectura" "grep -q -- '--sandbox read-onl
 debe "la misma tarea no se lanza dos veces" "! '$DT' launch con_tareas aaaaaa000003"
 debe "un motor desconocido se rechaza" "! '$DT' launch simple free --instruction '$T/encargo.txt' --engine nope"
 debe "con el sistema en inglés, el encargo y las reglas van en inglés" "grep -q 'Its entry in tasks/TASKS.md' '$R/con_tareas.prompt.txt' && grep -q 'You are already on branch' '$R/simple.prompt.txt' && grep -q 'You are a Dixi Tower' '$R/simple.reglas.md'"
+MERGE='{"tool_input":{"command":"gh pr merge 3"}}'
+debe "la barrera bloquea y explica en inglés" "(echo '$MERGE' | DIXI_AGENTE=1 DIXI_TOWER_LANG=en python3 -B '$SRC/hooks/guardia.py' 2>&1; true) | grep -q 'local agent guard'"
+debe "la barrera bloquea y explica en español" "(echo '$MERGE' | DIXI_AGENTE=1 DIXI_TOWER_LANG=es python3 -B '$SRC/hooks/guardia.py' 2>&1; true) | grep -q 'barrera de agentes'"
+debe "la barrera sale con código 2 al bloquear" "echo '$MERGE' | DIXI_AGENTE=1 python3 -B '$SRC/hooks/guardia.py' 2>/dev/null; [ \$? -eq 2 ]"
+debe "el guion del agente le pasa su idioma a los hooks" "grep -q 'DIXI_TOWER_LANG=en' '$R/simple.sh'"
 debe "con DIXI_TOWER_LANG=es, el encargo va en español" "DIXI_TOWER_LANG=es '$DT' launch simple free --instruction '$T/encargo.txt' && grep -q 'Ya estás en la rama' '$R/simple@3.prompt.txt' && grep -q 'Eres un agente local' '$R/simple@3.reglas.md'"
 debe "las reglas del agente no traen nada de una instalación ajena" "! grep -qi 'sys_task\|TASKS.md' '$R/simple.reglas.md'"
 

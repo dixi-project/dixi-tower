@@ -1,23 +1,7 @@
 #!/usr/bin/env bash
 # Dixi Tower — torre de control local para agentes de código.
-# Lanza sesiones interactivas de tu agente de código dentro de tmux, cada una en su
-# propio worktree y rama. Un proyecto puede tener varios
-# agentes a la vez: el primero se llama como el proyecto y los siguientes
-# <proyecto>@2, <proyecto>@3… Ese nombre es el <agente> de ver, decir y detener.
-#
-#   dixi-tower siguiente <proyecto>            candidatas del backlog por prioridad
-#   dixi-tower lanzar <proyecto> <st-id> [--forzar] [--instruccion <archivo>] [--motor claude|codex] [--autonomia supervisada|equilibrada|autonoma]
-#   dixi-tower lanzar <proyecto> libre --instruccion <archivo>   sin tarea del tablero
-#   dixi-tower estado                          tabla de todos los agentes
-#   dixi-tower ver <agente> [líneas]           pantalla actual del agente
-#   dixi-tower decir <agente> "<mensaje>"      escribirle al agente
-#   dixi-tower detener <agente>                cierra su ventana (conserva el worktree)
-#   dixi-tower reanudar <agente>               vuelve a encender un agente cerrado y retoma su conversación
-#   dixi-tower eliminar <agente>               quita un agente cerrado y su worktree (la rama se conserva)
-#   dixi-tower abrir                           cómo entrar a verlos en vivo
-#   dixi-tower panel [puerto]                  panel web local (http://localhost:4310/)
-#   dixi-tower servicio instalar|quitar|reiniciar|estado   panel siempre encendido (launchd)
-#   dixi-tower doctor                          revisa requisitos e instalación
+# Lanzador: crea el worktree y la rama de cada agente y lo abre en una ventana de tmux.
+# La ayuda de los comandos está al final, en español e inglés (dixi-tower sin argumentos).
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -366,8 +350,31 @@ PYS
     esac
     ;;
   *)
-    case "${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}" in
-      es*) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
+    case "${DIXI_TOWER_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}" in
+      es*) cat <<'AYUDA'
+Dixi Tower — torre de control local para agentes de código.
+Lanza sesiones interactivas de tu agente de código dentro de tmux, cada una en su
+propio worktree y rama de git. Un proyecto puede tener varios agentes a la vez: el
+primero se llama como el proyecto y los siguientes <proyecto>@2, <proyecto>@3…
+
+  dixi-tower panel [puerto]                    panel web (http://localhost:4310/)
+  dixi-tower servicio instalar|quitar|reiniciar|estado   panel siempre encendido (macOS)
+  dixi-tower doctor                            revisa requisitos e instalación
+  dixi-tower lanzar <proyecto> libre --instruccion <archivo> [--motor M] [--autonomia A]
+  dixi-tower lanzar <proyecto> <id-de-tarea> [--forzar] [--instruccion <archivo>]
+  dixi-tower siguiente <proyecto>              tareas pendientes de un proyecto, por prioridad
+  dixi-tower estado                            tabla de todos los agentes
+  dixi-tower ver <agente> [líneas]             pantalla actual de un agente
+  dixi-tower decir <agente> "<mensaje>"        escribirle un mensaje a un agente
+  dixi-tower detener <agente>                  cierra su sesión (conserva worktree y rama)
+  dixi-tower reanudar <agente>                 vuelve a encender un agente detenido
+  dixi-tower eliminar <agente>                 quita un agente detenido y su worktree
+  dixi-tower abrir                             cómo ver las consolas en vivo
+
+Motores: claude, codex o uno propio (ver la guía de uso). Autonomía: supervisada,
+equilibrada, autonoma. Los nombres en inglés (launch, status, stop…) también sirven.
+AYUDA
+      ;;
       *) cat <<'AYUDA'
 Dixi Tower — local control tower for coding agents.
 Launches interactive sessions of your coding agent inside tmux, each in its own

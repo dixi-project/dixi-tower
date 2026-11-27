@@ -106,6 +106,7 @@
   "error_config": "The settings could not be saved.",
   "uso_codex": "not available with this engine",
   "uso_pendiente": "shown once Codex reports it in its footer",
+  "uso_sin_control": "limits are not enforced with this engine",
   "codex_nota": "With Codex: its sandbox protects .git, so in supervised and balanced it asks you to approve each commit, and in autonomous an automatic reviewer approves it. The first time in each repository it asks to trust the folder. Usage is shown but limits cannot be enforced, and the subagent cap applies when the agent is turned on.",
   "comandos": "Commands",
   "comando_proyecto": "project",

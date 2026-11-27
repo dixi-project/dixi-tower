@@ -423,10 +423,15 @@ def ficha(idioma, agente):
     partes = []
     for clave, tope in (("semana", conf["limites"]["semana"]), ("sesion", conf["limites"]["sesion"])):
         if isinstance(u.get(clave), (int, float)):
+            if conf["motor"] != "claude":   # con Codex el uso se muestra, pero el límite no se puede hacer cumplir
+                partes.append(f'{e(t["uso_" + clave])} {u[clave]:.0f}%')
+                continue
             limite = t["uso_limite"].format(n=tope) if tope else t["uso_sin_limite"]
             partes.append(f'{e(t["uso_" + clave])} {u[clave]:.0f}% <span class="tenue">({e(limite)})</span>')
     if isinstance(u.get("contexto_libre"), (int, float)):
         partes.append(e(t["uso_contexto"].format(n=f'{u["contexto_libre"]:.0f}')))
+    if partes and conf["motor"] != "claude":
+        partes.append(f'<span class="tenue">{e(t["uso_sin_control"])}</span>')
     if partes:
         filas.append((t["uso"], " · ".join(partes)))
     elif conf["motor"] != "claude":
@@ -434,7 +439,7 @@ def ficha(idioma, agente):
         filas.append((t["uso"], f'<span class="tenue">{e(t[clave])}</span>'))
     sub = conf["subagentes"]
     filas.append((t["subagentes"], e(t["subagentes_max"].format(n=sub["max"]) if sub["permitidos"] else t["subagentes_no"])))
-    tope = config.limite_alcanzado(agente) if conf["motor"] == "claude" else ""
+    tope = config.limite_alcanzado(agente, idioma) if conf["motor"] == "claude" else ""
     aviso = f'<p class="tope" role="status">{e(t["tope_alcanzado"].format(motivo=tope))}</p>' if tope else ""
     return (
         f'<div class="ficha e-{a["estado"]}" data-viva="{1 if a["viva"] else 0}">'
@@ -1249,6 +1254,12 @@ JS = """
   var inicial=decodeURIComponent(location.hash.slice(1)),v0=visibles();
   if(items().some(function(b){return b.dataset.p===inicial;}))elegir(inicial);
   else if(v0.length)elegir(v0[0].dataset.p);
+  // Cambiar solo el #agente (un aviso de escritorio, un enlace, la barra de direcciones)
+  // no recarga la página: se cambia de agente aquí.
+  window.addEventListener('hashchange',function(){
+    var p=decodeURIComponent(location.hash.slice(1));
+    if(items().some(function(b){return b.dataset.p===p;}))elegir(p);
+  });
   hora();
   setInterval(function(){cargarTerm(false);},1500);
   setInterval(function(){cargarLista().then(cargarFicha);},4000);

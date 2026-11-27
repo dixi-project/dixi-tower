@@ -62,6 +62,39 @@ CATALOGO = {
                      "You are already on branch {rama} (your own worktree, based on {ref})."),
     "encargo_ficha": ("Si el registro apunta a una ficha, léela antes de empezar.",
                       "If the entry points to a spec file, read it before you start."),
+    # Límites de uso (los ve el agente y el panel)
+    "limite_texto": ("uso {nombre} en {valor}% (límite {tope}%)", "{nombre} usage at {valor}% (limit {tope}%)"),
+    "limite_semana": ("semanal", "weekly"),
+    "limite_sesion": ("de sesión", "5-hour session"),
+    # Hooks: lo que lee el agente cuando se le bloquea algo
+    "h_limite": ("Límite de uso alcanzado: {motivo}. No ejecutes más herramientas: detente y dile a la persona, "
+                 "en un mensaje breve, en qué punto quedó el trabajo. Puede subir el límite de este agente desde el panel.",
+                 "Usage limit reached: {motivo}. Do not run any more tools: stop and tell the person, in one short "
+                 "message, where the work stands. They can raise this agent's limit from the panel."),
+    "h_sin_subagentes": ("Este agente no tiene autorizado usar subagentes: haz el trabajo tú mismo.",
+                         "This agent is not allowed to use subagents: do the work yourself."),
+    "h_workflow": ("Los flujos multiagente no están autorizados con un tope de {max} subagentes: usa subagentes individuales.",
+                   "Multi-agent workflows are not allowed with a cap of {max} subagents: use individual subagents."),
+    "h_tope_subagentes": ("Ya hay {n} subagentes abiertos y el máximo autorizado es {max}: espera a que termine alguno "
+                          "o haz esta parte tú mismo.",
+                          "There are already {n} subagents open and the allowed maximum is {max}: wait for one to "
+                          "finish or do this part yourself."),
+    "h_bloqueado": ("Bloqueado por la barrera de agentes locales: {motivo}.", "Blocked by the local agent guard: {motivo}."),
+    "g_merge": ("integrar un PR es de una persona", "merging a PR is a person's job"),
+    "g_aprobar": ("aprobar un PR es de una persona", "approving a PR is a person's job"),
+    "g_force": ("force push prohibido", "force push is not allowed"),
+    "g_base": ("no se publica en la rama base: solo en la rama del agente", "no pushing to the base branch: only to the agent's own branch"),
+    "g_desplegar": ("desplegar no es del agente", "deploying is not the agent's job"),
+    "g_iac": ("aplicar infraestructura no es del agente", "applying infrastructure is not the agent's job"),
+    "g_publicar": ("publicar paquetes no es del agente", "publishing packages is not the agent's job"),
+    "g_borrado": ("borrado catastrófico", "catastrophic deletion"),
+    "g_secretos": ("no se leen secretos; mira .env.example", "secrets are not read; look at .env.example"),
+    "g_ddl": ("DDL destructivo", "destructive DDL"),
+    "g_aws": ("AWS solo en lectura", "AWS is read-only"),
+    # Avisos de escritorio
+    "aviso_titulo": ("Agente {ag}", "Agent {ag}"),
+    "aviso_fin": ("terminó su turno", "finished its turn"),
+    "aviso_necesita": ("te necesita", "needs you"),
     # Programas auxiliares
     "valor_invalido": ("Valor inválido para {clave}: {valor} (opciones: {ops})", "Invalid value for {clave}: {valor} (options: {ops})"),
     "worktree_no_existe": ("El worktree de este agente ya no existe: {wt}", "This agent's worktree no longer exists: {wt}"),

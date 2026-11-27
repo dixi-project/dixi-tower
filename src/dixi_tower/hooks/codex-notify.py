@@ -41,8 +41,11 @@ def main():
         d = json.load(open(ruta, encoding="utf-8"))
     except Exception:
         return
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from mensajes import t
     d.update(estado="en_pausa", actualizado=time.time(), motor_sesion="codex",
-             detalle=(mensaje or "terminó su turno")[-300:])
+             detalle=(mensaje or t("aviso_fin"))[-300:])
     if hilo_valido:
         d["session_id"] = hilo
     with open(ruta + ".tmp", "w", encoding="utf-8") as fh:
@@ -51,9 +54,8 @@ def main():
 
     if (os.environ.get("DIXI_TOWER_NOTIFY") or os.environ.get("DIXI_AGENTES_AVISOS") or "1") == "0":
         return
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from avisos import avisar_escritorio
-    avisar_escritorio(f"Agente {agente}", "terminó su turno", agente)
+    avisar_escritorio(t("aviso_titulo", ag=agente), t("aviso_fin"), agente)
 
 
 try:
