@@ -43,6 +43,10 @@ PLIST="$HOME/Library/LaunchAgents/$ETIQUETA.plist"
 
 m() { python3 "$DIR/mensajes.py" "$@"; }   # mensaje en el idioma del usuario
 
+esperar_panel() {   # hasta 15 s: al arrancar con la máquina ocupada puede tardar
+  local i; for i in $(seq 1 30); do panel_responde && return 0; sleep 0.5; done; return 1
+}
+
 panel_responde() { curl -s -o /dev/null -m 2 "http://127.0.0.1:${1:-$PUERTO}/es/lista"; }
 
 mkdir -p "$HOME_AG/estado" "$HOME_AG/run" "$HOME_AG/worktrees"
@@ -336,8 +340,7 @@ PYS
         launchctl bootout "$dominio/$ETIQUETA_ANTERIOR" 2>/dev/null || true
         rm -f "$HOME/Library/LaunchAgents/$ETIQUETA_ANTERIOR.plist"
         launchctl bootstrap "$dominio" "$PLIST"
-        sleep 2
-        if panel_responde; then m servicio_instalado "url=http://localhost:$PUERTO/"
+        if esperar_panel; then m servicio_instalado "url=http://localhost:$PUERTO/"
         else m servicio_sin_respuesta "log=$HOME_AG/panel.log" >&2; exit 1; fi
         ;;
       quitar|uninstall)
@@ -346,8 +349,8 @@ PYS
         m servicio_quitado
         ;;
       reiniciar|restart)
-        launchctl kickstart -k "$dominio/$ETIQUETA" && sleep 2
-        if panel_responde; then m panel_reiniciado "url=http://localhost:$PUERTO/"; else m panel_no_responde "log=$HOME_AG/panel.log" >&2; exit 1; fi
+        launchctl kickstart -k "$dominio/$ETIQUETA"
+        if esperar_panel; then m panel_reiniciado "url=http://localhost:$PUERTO/"; else m panel_no_responde "log=$HOME_AG/panel.log" >&2; exit 1; fi
         ;;
       estado|status)
         if [ -f "$PLIST" ]; then m servicio_si "plist=$PLIST"; else m servicio_no; fi
