@@ -16,7 +16,7 @@ import sys
 import time
 
 import config
-from mensajes import t
+from mensajes import idioma, t
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 HOME_AG = config.HOME_AG
@@ -81,7 +81,8 @@ def main():
         except Exception:
             base = None
     # Reglas del agente: las de Dixi Tower más las que el usuario haya añadido.
-    texto = open(os.path.join(DIR, "worker-prompt.md"), encoding="utf-8").read()
+    nombre = "worker-prompt.md" if idioma() == "es" else "worker-prompt.en.md"
+    texto = open(os.path.join(DIR, nombre), encoding="utf-8").read()
     try:
         propias = open(config.ruta_reglas_propias(), encoding="utf-8").read().strip()
     except OSError:

@@ -48,6 +48,8 @@ debe "el segundo se llama simple@2" "vivas | grep -qx 'simple@2'"
 debe "Codex supervisado arranca en solo lectura" "grep -q -- '--sandbox read-only' '$R/simple@2.sh'"
 debe "la misma tarea no se lanza dos veces" "! '$DT' launch con_tareas aaaaaa000003"
 debe "un motor desconocido se rechaza" "! '$DT' launch simple free --instruction '$T/encargo.txt' --engine nope"
+debe "con el sistema en inglés, el encargo y las reglas van en inglés" "grep -q 'Its entry in tasks/TASKS.md' '$R/con_tareas.prompt.txt' && grep -q 'You are already on branch' '$R/simple.prompt.txt' && grep -q 'You are a Dixi Tower' '$R/simple.reglas.md'"
+debe "con DIXI_TOWER_LANG=es, el encargo va en español" "DIXI_TOWER_LANG=es '$DT' launch simple free --instruction '$T/encargo.txt' && grep -q 'Ya estás en la rama' '$R/simple@3.prompt.txt' && grep -q 'Eres un agente local' '$R/simple@3.reglas.md'"
 debe "las reglas del agente no traen nada de una instalación ajena" "! grep -qi 'sys_task\|TASKS.md' '$R/simple.reglas.md'"
 
 echo "Motor propio"

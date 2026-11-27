@@ -54,6 +54,14 @@ CATALOGO = {
     "panel_no": ("Panel: no responde", "Panel: not responding"),
     "uso_servicio": ("Uso: dixi-tower servicio instalar|quitar|reiniciar|estado",
                      "Usage: dixi-tower service install|uninstall|restart|status"),
+    # Encargo que recibe el agente al nacer
+    "encargo_tarea": ("Tarea st:{id} — {titulo}", "Task st:{id} — {titulo}"),
+    "encargo_registro": ("Su registro en tasks/TASKS.md:", "Its entry in tasks/TASKS.md:"),
+    "encargo_indicaciones": ("Indicaciones adicionales:", "Additional instructions:"),
+    "encargo_rama": ("Ya estás en la rama {rama} (worktree propio, base {ref}).",
+                     "You are already on branch {rama} (your own worktree, based on {ref})."),
+    "encargo_ficha": ("Si el registro apunta a una ficha, léela antes de empezar.",
+                      "If the entry points to a spec file, read it before you start."),
     # Programas auxiliares
     "valor_invalido": ("Valor inválido para {clave}: {valor} (opciones: {ops})", "Invalid value for {clave}: {valor} (options: {ops})"),
     "worktree_no_existe": ("El worktree de este agente ya no existe: {wt}", "This agent's worktree no longer exists: {wt}"),

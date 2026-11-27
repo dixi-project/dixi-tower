@@ -176,14 +176,14 @@ cmd_lanzar() {
     if [ "$id" = "libre" ]; then
       cat "$instr"; printf '\n\n'
     else
-      printf 'Tarea st:%s — %s\n\n' "$id" "$titulo"
-      printf 'Su registro en tasks/TASKS.md:\n%s\n\n' "$linea"
+      printf '%s\n\n' "$(m encargo_tarea "id=$id" "titulo=$titulo")"
+      printf '%s\n%s\n\n' "$(m encargo_registro)" "$linea"
       if [ -n "$instr" ] && [ -s "$instr" ]; then
-        printf 'Indicaciones adicionales:\n'; cat "$instr"; printf '\n\n'
+        printf '%s\n' "$(m encargo_indicaciones)"; cat "$instr"; printf '\n\n'
       fi
     fi
-    printf 'Ya estás en la rama %s (worktree propio, base %s). ' "$rama" "$ref"
-    printf 'Si el registro apunta a una ficha, léela antes de empezar.\n'
+    printf '%s' "$(m encargo_rama "rama=$rama" "ref=$ref")"
+    [ "$id" = "libre" ] && printf '\n' || printf ' %s\n' "$(m encargo_ficha)"
   } > "$prompt"
 
   # Configuración con la que nace: la global más lo que se pidió en este lanzamiento.
