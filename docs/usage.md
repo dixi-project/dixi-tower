@@ -88,6 +88,7 @@ What to expect with Codex:
 | `arranque.py` | Writes the script that opens or resumes a session for the agent's engine and autonomy |
 | `hooks/barra.py` | The agent's status line: stores account usage in `~/.dixi-tower/uso/` and shows your own status line |
 | `hooks/control.py` | Before each tool call: enforces usage limits and the subagent cap |
+| `hooks/avisos.py` | Desktop notifications: terminal-notifier or osascript on macOS, notify-send on Linux |
 | `hooks/codex-notify.py` | End of a Codex turn: updates its state and notifies you |
 | `comandos.json` | Each engine's own commands, for autocomplete |
 | `hooks/guardia.py` | Blocks merge, pushing to the base branch, force push, deploys, writes to AWS and reading secrets |

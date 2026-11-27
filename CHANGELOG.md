@@ -21,7 +21,8 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Dictado en el panel, con el reconocimiento de voz del navegador.
 - Archivos y rutas en el mensaje: arrastrar o pegar archivos (se guarda una copia) y explorador de carpetas para insertar rutas reales.
 - Comandos, ayuda y mensajes en inglés y en español, según el idioma del sistema; `dixi-tower doctor`.
-- Prueba de humo (`tests/smoke.sh`).
+- Prueba de humo (`tests/smoke.sh`) y prueba en Linux con Docker (`tests/linux.sh`).
+- Linux: avisos de escritorio con `notify-send`.
 
 ### Cambiado
 
@@ -40,7 +41,7 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 
 ### Conocido
 
-- Probado solo en macOS.
+- En Linux no hay servicio siempre encendido: el panel se levanta con `dixi-tower panel`.
 
 ## Links
 

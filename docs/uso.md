@@ -88,6 +88,7 @@ Qué esperar con Codex:
 | `arranque.py` | Escribe el script que abre o retoma la sesión según motor y autonomía |
 | `hooks/barra.py` | Barra de estado del agente: guarda el uso de la cuenta en `~/.dixi-tower/uso/` y muestra la barra propia del usuario |
 | `hooks/control.py` | Antes de cada herramienta: aplica los límites de uso y el tope de subagentes |
+| `hooks/avisos.py` | Avisos de escritorio: terminal-notifier u osascript en macOS, notify-send en Linux |
 | `hooks/codex-notify.py` | Fin de turno de un agente Codex: actualiza su estado y avisa |
 | `comandos.json` | Comandos propios de cada motor para el autocompletado |
 | `hooks/guardia.py` | Bloquea merge, push a la rama base, force push, deploys, AWS de escritura y lectura de secretos |

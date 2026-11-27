@@ -58,6 +58,8 @@ if not encontrados:
 
 print(T("\nOpcionales", "\nOptional"))
 linea(bool(shutil.which("gh")), "gh", T("para que los agentes abran pull requests", "so agents can open pull requests"), opcional=True)
+if platform.system() == "Linux":
+    linea(bool(shutil.which("notify-send")), "notify-send", T("avisos de escritorio (paquete libnotify-bin)", "desktop notifications (libnotify-bin package)"), opcional=True)
 if platform.system() == "Darwin":
     linea(bool(shutil.which("terminal-notifier")), "terminal-notifier", T("avisos que abren el panel al hacer clic", "notifications that open the panel on click"), opcional=True)
 

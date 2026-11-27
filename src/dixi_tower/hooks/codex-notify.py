@@ -51,13 +51,9 @@ def main():
 
     if (os.environ.get("DIXI_TOWER_NOTIFY") or os.environ.get("DIXI_AGENTES_AVISOS") or "1") == "0":
         return
-    notificador = shutil.which("terminal-notifier") or next(
-        (r for r in ("/opt/homebrew/bin/terminal-notifier", "/usr/local/bin/terminal-notifier") if os.path.exists(r)), None)
-    if notificador:
-        puerto = (os.environ.get("DIXI_TOWER_PORT") or os.environ.get("DIXI_AGENTES_PUERTO") or "4310")
-        subprocess.run([notificador, "-title", f"Agente {agente}", "-message", "terminó su turno",
-                        "-group", f"agente-{agente}", "-open", f"http://localhost:{puerto}/#{agente}"],
-                       capture_output=True, timeout=5)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from avisos import avisar_escritorio
+    avisar_escritorio(f"Agente {agente}", "terminó su turno", agente)
 
 
 try:

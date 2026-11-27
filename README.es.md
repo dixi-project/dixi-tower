@@ -8,7 +8,7 @@ Dixi Tower es una torre de control local para agentes de código. Lanza sesiones
 
 Funciona con la suscripción que ya tienes: sin llaves de API, sin servicio en la nube, y nada sale de tu máquina salvo lo que hagan los propios agentes.
 
-> **Estado: alfa.** Probado en macOS con Claude Code y Codex. En Linux debería funcionar con `dixi-tower panel`, pero no se ha probado. Ver la [hoja de ruta](ROADMAP.md).
+> **Estado: alfa.** Probado en macOS con Claude Code y Codex, y en Linux (Debian 12). En Linux el panel se levanta con `dixi-tower panel`; el servicio siempre encendido es solo de macOS. Ver la [hoja de ruta](ROADMAP.md).
 
 ## Qué ofrece
 
@@ -24,10 +24,10 @@ Funciona con la suscripción que ya tienes: sin llaves de API, sin servicio en l
 
 ## Requisitos
 
-- macOS, `bash`, Python 3.9 o posterior (solo biblioteca estándar)
+- macOS o Linux, `bash`, Python 3.9 o posterior (solo biblioteca estándar)
 - `tmux` y `git`
 - Al menos un motor: [Claude Code](https://claude.com/claude-code) o [Codex CLI](https://github.com/openai/codex) con sesión iniciada en tu suscripción, o el tuyo
-- Opcional: `gh` (pull requests), `terminal-notifier` (avisos clicables)
+- Opcional: `gh` (pull requests), `terminal-notifier` en macOS o `notify-send` en Linux (avisos de escritorio)
 
 ## Inicio rápido
 

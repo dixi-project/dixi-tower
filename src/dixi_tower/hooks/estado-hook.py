@@ -10,6 +10,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from avisos import avisar_escritorio  # noqa: E402
+
 
 def main():
     proyecto = os.environ.get("DIXI_AGENTE_PROYECTO")
@@ -71,24 +74,7 @@ def main():
     if avisar:
         if (os.environ.get("DIXI_TOWER_NOTIFY") or os.environ.get("DIXI_AGENTES_AVISOS") or "1") == "0":
             return
-        # terminal-notifier: al hacer clic abre el panel en ese agente. Con
-        # osascript el aviso sale a nombre de «Script Editor» y el clic abre esa app.
-        import shutil
-        notificador = shutil.which("terminal-notifier") or next(
-            (r for r in ("/opt/homebrew/bin/terminal-notifier", "/usr/local/bin/terminal-notifier") if os.path.exists(r)), None)
-        if notificador:
-            puerto = (os.environ.get("DIXI_TOWER_PORT") or os.environ.get("DIXI_AGENTES_PUERTO") or "4310")
-            subprocess.run(
-                [notificador, "-title", f"Agente {agente}", "-message", avisar.lstrip("-[") or "aviso",
-                 "-group", f"agente-{agente}", "-open", f"http://localhost:{puerto}/#{agente}"],
-                capture_output=True, timeout=5,
-            )
-            return
-        texto = avisar.replace("\\", " ").replace('"', "'")
-        subprocess.run(
-            ["osascript", "-e", f'display notification "{texto}" with title "Agente {agente}"'],
-            capture_output=True, timeout=5,
-        )
+        avisar_escritorio(f"Agente {agente}", avisar, agente)
 
 
 try:

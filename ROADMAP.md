@@ -41,14 +41,15 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 
 ### 5. Sistemas
 
-- [ ] Linux: servicio con systemd y avisos con `notify-send`.
+- [x] Linux probado en Debian 12 (`tests/linux.sh`): panel, agentes, instalación con pip y avisos con `notify-send`.
+- [ ] Linux: servicio siempre encendido con systemd (hoy, `dixi-tower panel`).
 - [ ] Windows: solo vía WSL; documentarlo.
 
 ### 6. Calidad
 
 - [x] Prueba de humo repetible (`tests/smoke.sh`), con motores falsos y una sesión tmux aislada.
 - [ ] Pruebas del panel en un navegador (hoy se verifican a mano).
-- [ ] Integración continua.
+- [ ] Integración continua: correr `tests/smoke.sh` y `tests/linux.sh` en cada cambio.
 
 ## Después
 
