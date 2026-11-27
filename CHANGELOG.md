@@ -26,6 +26,7 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Logo, imagen social e ícono del panel.
 - Manual de operación con capturas, en inglés y en español (`docs/manual.md`, `docs/manual.es.md`).
 - Reglas del agente en inglés (`worker-prompt.en.md`).
+- Windows a través de WSL2 (sin probar todavía en un Windows real): guía en el manual, `doctor` reconoce WSL y avisa si los proyectos están en el disco de Windows, y los avisos de escritorio usan las notificaciones de Windows.
 
 ### Cambiado
 

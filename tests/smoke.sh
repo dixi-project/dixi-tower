@@ -125,6 +125,23 @@ P=$(python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1', 0)); prin
 debe "el panel en tmux usa la carpeta de datos indicada y sirve su ícono" "'$DT' panel $P >/dev/null && for i in \$(seq 1 20); do curl -s -m 1 http://127.0.0.1:$P/es/lista | grep -q con_tareas && break; sleep 0.5; done && curl -s http://127.0.0.1:$P/es/lista | grep -q con_tareas && curl -s -D - -o /dev/null http://127.0.0.1:$P/favicon.svg | grep -qi 'image/svg+xml'"
 debe "eliminar un agente borra también sus adjuntos" "'$DT' stop con_tareas && '$DT' delete con_tareas && [ ! -d '$DIXI_TOWER_HOME/adjuntos/con_tareas' ]"
 
+echo "Windows (WSL)"
+printf 'Linux version 5.15.167.4-microsoft-standard-WSL2\n' > "$T/version-wsl"
+printf 'Linux version 6.1.0-28-amd64 (debian)\n' > "$T/version-linux"
+debe "reconoce WSL y no lo confunde con Linux" "cd '$SRC' && env -u WSL_DISTRO_NAME python3 -B -c \"
+import sistema
+assert sistema.es_wsl('$T/version-wsl') and not sistema.es_wsl('$T/version-linux')\""
+debe "distingue el disco de Windows (/mnt/c) de una carpeta de Linux" "cd '$SRC' && python3 -B -c \"
+import sistema
+assert sistema.en_disco_de_windows('/mnt/c/Users/ana/projects')
+assert not sistema.en_disco_de_windows('/home/ana/projects') and not sistema.en_disco_de_windows('/mnt/datos/x')\""
+debe "el aviso de Windows pasa los textos por WSLENV, no en la orden" "cd '$SRC/hooks' && python3 -B -c \"
+import base64, avisos
+orden, env = avisos.orden_windows('powershell.exe', 'Agent \\\"x\\\"', 'needs <you> & me', 'http://localhost:4310/#x')
+guion = base64.b64decode(orden[-1]).decode('utf-16-le')
+assert 'ToastGeneric' in guion and 'needs' not in ' '.join(orden)
+assert env['DT_TEXTO'] == 'needs <you> & me' and 'DT_URL/u' in env['WSLENV']\""
+
 echo
 if [ "$fallos" -eq 0 ]; then echo "Todo pasó."; else echo "$fallos prueba(s) fallaron."; fi
 exit "$fallos"

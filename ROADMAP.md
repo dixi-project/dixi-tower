@@ -37,13 +37,15 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 - [x] Línea de comandos y ayuda en inglés y en español.
 - [x] Mensajes del lanzador en los dos idiomas, según el idioma del sistema o `DIXI_TOWER_LANG`.
 - [x] Guía de uso en inglés (`docs/usage.md`).
-- [ ] Reglas del agente (`worker-prompt.md`) en el idioma del usuario.
+- [x] Reglas del agente, encargo, bloqueos y avisos en el idioma del usuario.
 
 ### 5. Sistemas
 
 - [x] Linux probado en Debian 12 (`tests/linux.sh`): panel, agentes, instalación con pip y avisos con `notify-send`.
 - [ ] Linux: servicio siempre encendido con systemd (hoy, `dixi-tower panel`).
-- [ ] Windows: solo vía WSL; documentarlo.
+- [x] Windows vía WSL2: documentado en el manual, `doctor` lo reconoce y avisa si los proyectos están en el disco de Windows, y los avisos usan las notificaciones de Windows.
+- [ ] Windows vía WSL2: probarlo en un Windows real.
+- [ ] Windows nativo, sin WSL: solo si hay demanda. Exige manejar las terminales sin tmux (ConPTY) y pasar el lanzador de bash a Python.
 
 ### 6. Calidad
 

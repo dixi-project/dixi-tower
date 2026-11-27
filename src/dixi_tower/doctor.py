@@ -13,6 +13,9 @@ import urllib.request
 
 import config
 from mensajes import idioma
+from sistema import en_disco_de_windows, es_wsl
+
+WSL = es_wsl()
 
 ES = idioma() == "es"   # DIXI_TOWER_LANG manda; si no está, el idioma del sistema
 T = lambda es, en: es if ES else en
@@ -37,6 +40,8 @@ def version(*orden):
 
 
 print(T("Requisitos", "Requirements"))
+if WSL:
+    linea(True, T("Windows con WSL", "Windows with WSL"), os.environ.get("WSL_DISTRO_NAME", "Linux"))
 linea(sys.version_info >= (3, 9), f"Python {platform.python_version()}", "" if sys.version_info >= (3, 9) else T("hace falta 3.9 o posterior", "3.9 or later is required"))
 for programa in ("bash", "git", "tmux"):
     ruta = shutil.which(programa)
@@ -59,7 +64,10 @@ if not encontrados:
 
 print(T("\nOpcionales", "\nOptional"))
 linea(bool(shutil.which("gh")), "gh", T("para que los agentes abran pull requests", "so agents can open pull requests"), opcional=True)
-if platform.system() == "Linux":
+if WSL:
+    linea(bool(shutil.which("powershell.exe")), "powershell.exe",
+          T("avisos de Windows que abren el panel al hacer clic", "Windows notifications that open the panel on click"), opcional=True)
+elif platform.system() == "Linux":
     linea(bool(shutil.which("notify-send")), "notify-send", T("avisos de escritorio (paquete libnotify-bin)", "desktop notifications (libnotify-bin package)"), opcional=True)
 if platform.system() == "Darwin":
     linea(bool(shutil.which("terminal-notifier")), "terminal-notifier", T("avisos que abren el panel al hacer clic", "notifications that open the panel on click"), opcional=True)
@@ -68,6 +76,10 @@ print(T("\nInstalación", "\nInstallation"))
 linea(True, T("Carpeta de datos", "Data folder"), config.HOME_AG + ("" if os.path.isdir(config.HOME_AG) else T(" (se crea al primer uso)", " (created on first use)")))
 proyectos = config.entorno("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects"))
 linea(os.path.isdir(proyectos), T("Carpeta de proyectos", "Projects folder"), proyectos + ("" if os.path.isdir(proyectos) else T(" — no existe; cámbiala con DIXI_TOWER_PROJECTS", " — missing; change it with DIXI_TOWER_PROJECTS")), opcional=True)
+if WSL and os.path.isdir(proyectos) and en_disco_de_windows(proyectos):
+    linea(False, T("Proyectos dentro de Linux", "Projects inside Linux"),
+          T("están en el disco de Windows (/mnt/…), donde git va muy lento; muévelos a ~/projects dentro de WSL",
+            "they are on the Windows drive (/mnt/…), where git is very slow; move them to ~/projects inside WSL"), opcional=True)
 try:
     urllib.request.urlopen(f"http://127.0.0.1:{puerto}/es/lista", timeout=2)
     responde = True

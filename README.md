@@ -19,7 +19,7 @@ Dixi Tower is a local control tower for coding agents. It launches coding-agent 
 
 It runs on the subscription you already have: no API keys, no cloud service, nothing leaves your machine except what the agents themselves do.
 
-> **Status: alpha.** Tested on macOS with Claude Code and Codex, and on Linux (Debian 12). On Linux run the panel with `dixi-tower panel`; the always-on service is macOS only. See the [roadmap](ROADMAP.md).
+> **Status: alpha.** Tested on macOS with Claude Code and Codex, and on Linux (Debian 12). Windows works through WSL2 (not tested on a real Windows machine yet). On Linux and Windows run the panel with `dixi-tower panel`; the always-on service is macOS only. See the [roadmap](ROADMAP.md).
 
 ## What you get
 
@@ -35,7 +35,7 @@ It runs on the subscription you already have: no API keys, no cloud service, not
 
 ## Requirements
 
-- macOS or Linux, `bash`, Python 3.9 or later (standard library only)
+- macOS, Linux, or Windows with WSL2 ([how](docs/manual.md#on-windows-wsl2)); `bash`, Python 3.9 or later (standard library only)
 - `tmux` and `git`
 - At least one engine: [Claude Code](https://claude.com/claude-code) or [Codex CLI](https://github.com/openai/codex) signed in with your subscription, or your own
 - Optional: `gh` (pull requests), `terminal-notifier` on macOS or `notify-send` on Linux (desktop notifications)

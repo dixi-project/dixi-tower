@@ -20,6 +20,8 @@ dixi-tower panel                # alternativa sin servicio: lo levanta en tmux
 
 El servicio es un LaunchAgent (`~/Library/LaunchAgents/com.dixi-project.dixi-tower.plist`): arranca al iniciar sesión en la Mac y launchd lo relanza si se cae, sin depender de tmux. Su salida va a `~/.dixi-tower/panel.log`. Guarda el `PATH` del momento en que se instaló; si cambia dónde viven `tmux`, `git`, `gh` o `claude`, hay que reinstalarlo.
 
+En Linux y en Windows (WSL2) no hay servicio: el panel se levanta con `dixi-tower panel`. Para preparar Windows, ver [el manual](manual.es.md#en-windows-wsl2).
+
 Desde el panel se hace todo lo demás: lanzar un agente («＋ Nuevo agente»), ver su consola, escribirle, mandarle teclas y detenerlo.
 
 Por terminal:
@@ -88,7 +90,7 @@ Qué esperar con Codex:
 | `arranque.py` | Escribe el script que abre o retoma la sesión según motor y autonomía |
 | `hooks/barra.py` | Barra de estado del agente: guarda el uso de la cuenta en `~/.dixi-tower/uso/` y muestra la barra propia del usuario |
 | `hooks/control.py` | Antes de cada herramienta: aplica los límites de uso y el tope de subagentes |
-| `hooks/avisos.py` | Avisos de escritorio: terminal-notifier u osascript en macOS, notify-send en Linux |
+| `hooks/avisos.py` | Avisos de escritorio: terminal-notifier u osascript en macOS, notify-send en Linux, notificaciones de Windows con PowerShell en WSL |
 | `hooks/codex-notify.py` | Fin de turno de un agente Codex: actualiza su estado y avisa |
 | `comandos.json` | Comandos propios de cada motor para el autocompletado |
 | `hooks/guardia.py` | Bloquea merge, push a la rama base, force push, deploys, AWS de escritura y lectura de secretos |

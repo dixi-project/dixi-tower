@@ -25,7 +25,7 @@ Las capturas salen de una demo con dos repositorios de ejemplo: `acme-store` (un
 
 ## 1. Instalar
 
-Necesitas macOS o Linux con `bash`, Python 3.9 o posterior, `tmux`, `git` y al menos un motor con sesión iniciada en tu suscripción: [Claude Code](https://claude.com/claude-code) o [Codex CLI](https://github.com/openai/codex). Opcional: `gh` para que los agentes abran pull requests, y `terminal-notifier` (macOS) o `notify-send` (Linux) para los avisos de escritorio.
+Necesitas macOS, Linux o Windows con WSL2 (ver [En Windows](#en-windows-wsl2)), con `bash`, Python 3.9 o posterior, `tmux`, `git` y al menos un motor con sesión iniciada en tu suscripción: [Claude Code](https://claude.com/claude-code) o [Codex CLI](https://github.com/openai/codex). Opcional: `gh` para que los agentes abran pull requests, y `terminal-notifier` (macOS) o `notify-send` (Linux) para los avisos de escritorio; en Windows funcionan sin instalar nada.
 
 En macOS, con [Homebrew](https://brew.sh):
 
@@ -68,6 +68,25 @@ Todo lo imprescindible está.
 ```
 
 Una línea con ✗ te dice qué falta. Ejecuta `dixi-tower` sin argumentos para ver todos los comandos. Todo sale en el idioma de tu sistema; para fijarlo, usa `DIXI_TOWER_LANG=es`.
+
+### En Windows (WSL2)
+
+Dixi Tower funciona en Windows dentro de WSL2, el Linux que viene con Windows 10 y 11. El panel se abre en tu navegador de Windows de siempre. *El soporte de WSL todavía no se ha probado en un Windows real; si lo pruebas, cuéntanos cómo te fue en un issue.*
+
+1. En PowerShell como administrador, instala WSL con Ubuntu y reinicia cuando te lo pida:
+   ```powershell
+   wsl --install
+   ```
+2. Abre **Ubuntu** desde el menú Inicio e instala los requisitos:
+   ```sh
+   sudo apt update && sudo apt install -y tmux git python3 pipx gh
+   pipx ensurepath
+   ```
+3. Instala tu motor (Claude Code o Codex) **dentro de Ubuntu**, con sus instrucciones para Linux, e inicia sesión ahí. Un motor instalado del lado de Windows no cuenta.
+4. Guarda tus repositorios **dentro de Linux**, en `~/projects`. Clónalos ahí en lugar de usar `C:\` (`/mnt/c/…`), donde git va muy lento; `dixi-tower doctor` te avisa si están en el disco de Windows.
+5. Instala Dixi Tower con `pipx install git+https://github.com/dixi-project/dixi-tower`, levántalo con `dixi-tower panel` y abre **http://localhost:4310/** en tu navegador de Windows.
+
+Los avisos usan las notificaciones propias de Windows a través de PowerShell, sin instalar nada más. No hay servicio siempre encendido: después de reiniciar Windows o de ejecutar `wsl --shutdown`, vuelve a levantar el panel con `dixi-tower panel`.
 
 **Tu carpeta de proyectos.** Dixi Tower ofrece los repositorios git que hay dentro de `~/projects`. Si los tuyos están en otro lugar, define `DIXI_TOWER_PROJECTS` (por ejemplo en tu `~/.zshrc`) antes de levantar el panel:
 
