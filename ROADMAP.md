@@ -36,7 +36,7 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 
 - [x] Línea de comandos y ayuda en inglés y en español.
 - [x] Mensajes del lanzador en los dos idiomas, según el idioma del sistema o `DIXI_TOWER_LANG`.
-- [ ] Guía de uso en inglés.
+- [x] Guía de uso en inglés (`docs/usage.md`).
 - [ ] Reglas del agente (`worker-prompt.md`) en el idioma del usuario.
 
 ### 5. Sistemas

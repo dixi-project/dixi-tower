@@ -1,5 +1,7 @@
 # Guía de uso de Dixi Tower
 
+[English](usage.md) · **Español**
+
 ## Propósito
 
 Cómo se usa Dixi Tower día a día: comandos, configuración, piezas internas y reglas.
@@ -30,7 +32,7 @@ dixi-tower estado
 dixi-tower ver <agente> | decir <agente> "<msg>" | detener <agente>
 dixi-tower reanudar <agente>                       # encender uno cerrado y retomar su conversación
 dixi-tower eliminar <agente>                       # quitar uno cerrado y su worktree
-tmux attach -t dixi-tower                                             # consolas en vivo
+tmux attach -t dixi-tower                          # consolas en vivo
 ```
 
 ## Configuración
@@ -39,10 +41,10 @@ Se cambia desde el panel: **Configuración** (valores con los que nace cada agen
 
 | Ajuste | Opciones | Cuándo aplica |
 |---|---|---|
-| Motor | `claude` (Claude Code) o `codex` (Codex CLI) | Al encender el agente |
+| Motor | `claude` (Claude Code), `codex` (Codex CLI) o uno propio | Al encender el agente |
 | Autonomía | `supervisada`, `equilibrada`, `autonoma` | Al encender el agente |
 | Subagentes | permitidos o no, y máximo abiertos a la vez (1 a 20) | Claude: de inmediato. Codex: al encender |
-| Límite de uso semanal y de sesión (5 h) | porcentaje de la cuenta; 0 = sin límite | Claude: de inmediato. Codex: no se aplica |
+| Límite de uso semanal y de sesión (5 h) | porcentaje de la cuenta; 0 = sin límite | Claude: de inmediato. Codex: se muestra, no se aplica |
 
 Cómo se traduce la autonomía en cada motor:
 
@@ -90,6 +92,7 @@ Qué esperar con Codex:
 | `comandos.json` | Comandos propios de cada motor para el autocompletado |
 | `hooks/guardia.py` | Bloquea merge, push a la rama base, force push, deploys, AWS de escritura y lectura de secretos |
 | `panel.py` | Panel web: lee los archivos de estado, git y tmux; textos en `locales/` |
+| `mensajes.py` | Mensajes del lanzador en español e inglés |
 | `tareas.py`, `estado.py`, `ocupado.py` | Lectura de `tasks/TASKS.md`, tabla de estado y control de worktree en uso |
 
 ## Motores propios
@@ -164,14 +167,14 @@ Con Codex solo se ofrecen los del motor. ↑ ↓ eligen, Tab o Enter completan, 
 - **Tope en revisión** (solo con la integración de tareas): ver «Integración con tareas».
 - **Los datos de trabajo** viven en `~/.dixi-tower/` (`estado/`, `run/`, `worktrees/`), fuera de cualquier repositorio.
 
-## Variables
+## Variables de entorno
 
 Los nombres anteriores (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) se siguen aceptando.
 
 | Variable | Por defecto | Para qué |
 |---|---|---|
 | `DIXI_TOWER_PROJECTS` | `~/projects` | Carpeta cuyos repositorios se pueden lanzar |
-| `DIXI_TOWER_HOME` | `~/.dixi-tower` | Carpeta de datos: estado, configuración, scripts de arranque y worktrees. Si solo existe `~/.dixi-tower` (instalaciones anteriores), se usa esa |
+| `DIXI_TOWER_HOME` | `~/.dixi-tower` | Carpeta de datos: estado, configuración, scripts de arranque y worktrees. Si solo existe `~/.agentes` (instalaciones anteriores), se usa esa |
 | `DIXI_TOWER_PORT` | `4310` | Puerto del panel |
 | `DIXI_TOWER_NOTIFY` | `1` | `0` apaga las notificaciones |
 | `DIXI_TOWER_LANG` | idioma del sistema | `es` o `en`: idioma de los mensajes y de la ayuda |
@@ -179,7 +182,7 @@ Los nombres anteriores (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) se siguen acepta
 
 ## Seguridad del panel
 
-Escucha solo en `127.0.0.1`, rechaza peticiones cuya cabecera `Host` no sea local y exige un token aleatorio por arranque para toda acción que escribe (enviar texto o teclas, detener, lanzar). Quien pueda abrir el panel puede dar instrucciones a los agentes: no lo expongas por túnel ni proxy.
+Escucha solo en `127.0.0.1`, rechaza peticiones cuya cabecera `Host` no sea local y exige un token para toda acción que escribe (enviar texto o teclas, detener, lanzar, guardar adjuntos). El token se guarda en la carpeta de datos, legible solo por ti. Quien pueda abrir el panel puede dar instrucciones a los agentes: no lo expongas por túnel ni proxy.
 
 ## Links
 
