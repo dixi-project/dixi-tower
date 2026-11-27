@@ -9,6 +9,8 @@ import re
 import sys
 import unicodedata
 
+from mensajes import t
+
 LINEA = re.compile(r"^\s*- \[(.)\] (.*)$")
 ST = re.compile(r"<!--\s*st:([0-9a-f]+)\s*-->")
 TITULO = re.compile(r"\*\*(.+?)\*\*")
@@ -55,14 +57,14 @@ def main():
             if f["id"] == sys.argv[2]:
                 print(f"{f['titulo']}\t{slug(f['titulo'])}\t{f['linea']}")
                 return
-        sys.exit(f"No hay tarea con st:{sys.argv[2]} en la rama base")
+        sys.exit(t("tarea_no_encontrada", id=sys.argv[2]))
     else:
         cand = [f for f in filas if f["marca"] == " " and f["id"] and not f["bloqueada"]]
         cand.sort(key=lambda f: (f["prio"], f["n"]))
         for f in cand[:15]:
             prio = f"P{f['prio']}" if f["prio"] < 9 else "--"
             print(f"{prio}  st:{f['id']}  {f['titulo'][:110]}")
-        print(f"({len(cand)} candidatas en backlog con id; se muestran hasta 15)")
+        print(t("candidatas", n=len(cand)))
 
 
 if __name__ == "__main__":

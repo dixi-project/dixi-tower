@@ -20,7 +20,7 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Motores propios: cualquier agente de terminal se puede definir como motor.
 - Dictado en el panel, con el reconocimiento de voz del navegador.
 - Archivos y rutas en el mensaje: arrastrar o pegar archivos (se guarda una copia) y explorador de carpetas para insertar rutas reales.
-- Comandos y ayuda en inglés y en español; `dixi-tower doctor`.
+- Comandos, ayuda y mensajes en inglés y en español, según el idioma del sistema; `dixi-tower doctor`.
 - Prueba de humo (`tests/smoke.sh`).
 
 ### Cambiado
@@ -35,6 +35,7 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Con Codex, un evento interno podía guardar un id de sesión equivocado y romper «encender de nuevo».
 - Con Codex, un aviso de actualización dejaba esperando al agente.
 - `dixi-tower decir` no enviaba el mensaje a Codex.
+- `dixi-tower detener` decía «Detenido» aunque el agente no existiera.
 - Dos encargos libres lanzados en el mismo minuto chocaban al compartir carpeta y rama.
 
 ### Conocido

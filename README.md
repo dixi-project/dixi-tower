@@ -48,7 +48,7 @@ dixi-tower panel                # or: run the panel inside tmux (any system)
 
 Open the panel and click **＋ New agent**. Pick a repository from your projects folder (`~/projects` by default, change it with `DIXI_TOWER_PROJECTS`), type an instruction and launch.
 
-Run `dixi-tower` with no arguments to list every command. The panel and the help are available in English and Spanish; messages from the launcher are still in Spanish.
+Run `dixi-tower` with no arguments to list every command. Everything is available in English and Spanish, following your system language (or `DIXI_TOWER_LANG=en|es`).
 
 ## How it works
 

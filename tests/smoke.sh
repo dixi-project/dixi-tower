@@ -35,7 +35,9 @@ vivas() { tmux list-windows -t "=$DIXI_TOWER_SESSION" -F '#W' 2>/dev/null; }
 echo "Instalación nueva"
 debe "la ayuda sale en inglés" "'$DT' | grep -q 'local control tower'"
 debe "doctor encuentra lo imprescindible" "'$DT' doctor"
-debe "la carpeta de datos es la indicada, no ~/.agentes" "'$DT' status | grep -q 'Sin agentes' && [ -d '$DIXI_TOWER_HOME' ]"
+debe "la carpeta de datos es la indicada, no ~/.agentes" "'$DT' status | grep -q 'No agents' && [ -d '$DIXI_TOWER_HOME' ]"
+debe "los mensajes salen en el idioma del sistema" "('$DT' stop nope 2>&1; true) | grep -q 'Unknown agent' && (LANG=es_MX.UTF-8 '$DT' stop nope 2>&1; true) | grep -q 'No conozco al agente'"
+debe "DIXI_TOWER_LANG manda sobre el idioma del sistema" "(DIXI_TOWER_LANG=es '$DT' stop nope 2>&1; true) | grep -q 'No conozco'"
 
 echo "Lanzar"
 debe "sin tasks/TASKS.md, con instrucción libre (comandos en inglés)" "'$DT' launch simple free --instruction '$T/encargo.txt'"

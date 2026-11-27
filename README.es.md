@@ -48,7 +48,7 @@ dixi-tower panel                # o bien: el panel dentro de tmux (cualquier sis
 
 Abre el panel y pulsa **＋ Nuevo agente**. Elige un repositorio de tu carpeta de proyectos (`~/projects` por defecto; se cambia con `DIXI_TOWER_PROJECTS`), escribe una instrucción y lánzalo.
 
-Ejecuta `dixi-tower` sin argumentos para ver todos los comandos.
+Ejecuta `dixi-tower` sin argumentos para ver todos los comandos. Todo está en español e inglés, según el idioma de tu sistema (o `DIXI_TOWER_LANG=es|en`).
 
 ## Cómo funciona
 

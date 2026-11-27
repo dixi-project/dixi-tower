@@ -190,7 +190,8 @@ if __name__ == "__main__":
                 permitidos = motores_disponibles() if clave == "motor" else AUTONOMIAS
                 valor = {"supervised": "supervisada", "balanced": "equilibrada", "autonomous": "autonoma"}.get(valor, valor)
                 if valor and valor not in permitidos:
-                    sys.exit(f"Valor inválido para {clave}: {valor} (opciones: {', '.join(permitidos)})")
+                    from mensajes import t
+                    sys.exit(t("valor_invalido", clave=clave, valor=valor, ops=", ".join(permitidos)))
                 if valor:
                     cambios[clave] = valor
         salida = normalizar({**global_(), **cambios}, global_())

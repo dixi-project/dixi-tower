@@ -29,6 +29,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote
 
 import config
+from mensajes import t as tr
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 HOME_AG = config.HOME_AG
@@ -558,16 +559,17 @@ def opciones_tarea(idioma, proyecto):
 
 
 def lanzar(datos):
+    i = datos.get("_idioma")
     p, tarea, instr = datos.get("proyecto"), datos.get("tarea") or "libre", datos.get("instruccion") or ""
     if not isinstance(p, str) or p not in carpetas():
-        return 400, "Proyecto inválido."
+        return 400, tr("p_proyecto_invalido", i)
     if not isinstance(tarea, str) or not (tarea == "libre" or TAREA_OK.match(tarea)):
-        return 400, "Tarea inválida."
+        return 400, tr("p_tarea_invalida", i)
     if not isinstance(instr, str) or len(instr) > 8000:
-        return 400, "Instrucción inválida."
+        return 400, tr("p_instruccion_invalida", i)
     instr = "".join(ch for ch in instr if ch in "\n\t" or ord(ch) >= 32).strip()
     if tarea == "libre" and not instr:
-        return 400, "Sin tarea del tablero hace falta una instrucción."
+        return 400, tr("falta_instruccion", i)
     args = ["bash", os.path.join(DIR, "agentes.sh"), "lanzar", p, tarea]
     if datos.get("motor") in config.motores_disponibles():
         args += ["--motor", datos["motor"]]
@@ -582,12 +584,12 @@ def lanzar(datos):
             fh.write(instr + "\n")
         args += ["--instruccion", ruta]
     try:
-        r = subprocess.run(args, capture_output=True, text=True, timeout=240)
+        r = subprocess.run(args, capture_output=True, text=True, timeout=240, env=entorno_idioma(datos))
     except subprocess.TimeoutExpired:
-        return 500, "El lanzamiento tardó demasiado; revisa el estado en la torre."
+        return 500, tr("p_lanzar_lento", i)
     if r.returncode != 0:
         lineas = [l for l in r.stderr.strip().splitlines() if l.strip()]
-        return 409, (lineas[-1] if lineas else "No se pudo lanzar el agente.")[:400]
+        return 409, (lineas[-1] if lineas else tr("p_lanzar_fallo", i))[:400]
     creado = next((l[7:].strip() for l in r.stdout.splitlines() if l.startswith("AGENTE=")), p)
     return 200, creado
 
@@ -612,7 +614,7 @@ def guardar_adjunto(agente, nombre, datos):
     return ruta
 
 
-def explorar(ruta):
+def explorar(ruta, i=None):
     """Lista una carpeta del usuario para elegir una ruta real. Solo dentro de su
     carpeta personal y sin archivos ocultos (donde suelen vivir llaves y secretos)."""
     casa = os.path.realpath(os.path.expanduser("~"))
@@ -620,11 +622,11 @@ def explorar(ruta):
     if not os.path.isdir(actual):
         actual = casa
     if actual != casa and not actual.startswith(casa + os.sep):
-        return 403, "Solo se pueden explorar carpetas dentro de tu carpeta personal."
+        return 403, tr("p_fuera_de_casa", i)
     try:
         nombres = sorted(os.listdir(actual), key=str.lower)
     except OSError:
-        return 403, "No se puede leer esa carpeta."
+        return 403, tr("p_sin_lectura", i)
     carpetas, archivos = [], []
     for n in nombres:
         if not n.startswith("."):
@@ -633,39 +635,46 @@ def explorar(ruta):
                             "carpetas": carpetas[:500], "archivos": archivos[:500]}, ensure_ascii=False)
 
 
+def entorno_idioma(datos):
+    """Entorno para el lanzador, con el idioma de la página que pidió la acción."""
+    return {**os.environ, "DIXI_TOWER_LANG": datos.get("_idioma") or "es"}
+
+
 def accion(datos):
     """Ejecuta una acción de la página. Devuelve (código HTTP, mensaje)."""
+    i = datos.get("_idioma")
     if datos.get("explorar") is True:
-        return explorar(datos.get("ruta"))
+        return explorar(datos.get("ruta"), i)
     if datos.get("lanzar") is True:
         return lanzar(datos)
     if datos.get("guardar_config") is True:
         nueva, ag = datos.get("config"), datos.get("agente")
         if not isinstance(nueva, dict):
-            return 400, "Configuración inválida."
+            return 400, tr("p_config_invalida", i)
         if ag is None:
             config.guardar_global(nueva)
             return 200, "guardada"
         if not isinstance(ag, str) or not NOMBRE_OK.match(ag) or ag not in proyectos_con_estado():
-            return 404, "Agente desconocido."
+            return 404, tr("p_agente_desconocido", i)
         config.guardar_agente(ag, nueva)
         return 200, "guardada"
     orden = "reanudar" if datos.get("reanudar") is True else "eliminar" if datos.get("eliminar") is True else None
     if orden:
         ag = datos.get("proyecto")
         if not isinstance(ag, str) or not NOMBRE_OK.match(ag) or ag not in proyectos_con_estado():
-            return 404, "Agente desconocido."
+            return 404, tr("p_agente_desconocido", i)
         try:
-            r = subprocess.run(["bash", os.path.join(DIR, "agentes.sh"), orden, ag], capture_output=True, text=True, timeout=90)
+            r = subprocess.run(["bash", os.path.join(DIR, "agentes.sh"), orden, ag], capture_output=True, text=True, timeout=90,
+                               env=entorno_idioma(datos))
         except subprocess.TimeoutExpired:
-            return 500, "La operación tardó demasiado."
+            return 500, tr("p_lento", i)
         if r.returncode != 0:
             lineas = [l for l in r.stderr.strip().splitlines() if l.strip()]
-            return 409, (lineas[-1] if lineas else "No se pudo completar la operación.")[:400]
+            return 409, (lineas[-1] if lineas else tr("p_fallo", i))[:400]
         return 200, orden
     p = datos.get("proyecto")
     if not isinstance(p, str) or p not in proyectos_con_estado() or p not in ventanas_vivas():
-        return 404, "agente desconocido o sin ventana"
+        return 404, tr("p_sin_ventana", i)
     destino = f"{sesion()}:{p}"
     if datos.get("detener") is True:
         subprocess.run(["bash", os.path.join(DIR, "agentes.sh"), "detener", p], capture_output=True, timeout=15)
@@ -673,7 +682,7 @@ def accion(datos):
     tecla = datos.get("tecla")
     if tecla is not None:
         if tecla not in TECLAS:
-            return 400, "tecla no permitida"
+            return 400, tr("p_tecla", i)
         subprocess.run(["tmux", "send-keys", "-t", destino, tecla], capture_output=True, timeout=5)
         return 200, "tecla enviada"
     texto = datos.get("texto")
@@ -685,7 +694,7 @@ def accion(datos):
         time.sleep(0.3)
         subprocess.run(["tmux", "send-keys", "-t", destino, "Enter"], capture_output=True, timeout=5)
         return 200, "texto enviado"
-    return 400, "petición inválida"
+    return 400, tr("p_peticion", i)
 
 
 CSS = """
@@ -903,7 +912,7 @@ JS = """
   }
   function accion(datos){
     return fetch('/api/accion',{method:'POST',cache:'no-store',
-      headers:{'Content-Type':'application/json','X-Panel-Token':token},body:JSON.stringify(datos)})
+      headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},body:JSON.stringify(datos)})
       .then(function(r){if(r.status===403){location.reload();return;}if(!r.ok)throw 0;setTimeout(function(){cargarTerm(true);cargarLista();cargarFicha();},500);})
       .catch(mal);
   }
@@ -922,7 +931,7 @@ JS = """
     if(!p||b.disabled)return;
     er.hidden=true;b.disabled=true;b.textContent=b.dataset.ocupado;
     fetch('/api/accion',{method:'POST',cache:'no-store',
-      headers:{'Content-Type':'application/json','X-Panel-Token':token},body:JSON.stringify({proyecto:p,reanudar:true})})
+      headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},body:JSON.stringify({proyecto:p,reanudar:true})})
       .then(function(r){if(r.status===403){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;});})
       .then(function(){enfocar=true;return cargarLista();}).then(function(){cargarFicha();cargarTerm(true);})
       .catch(function(m){er.textContent=(typeof m==='string'&&m)?m:er.dataset.generico;er.hidden=false;})
@@ -937,7 +946,7 @@ JS = """
     if(!bEl.classList.contains('armado')){armarEl(true);tEl=setTimeout(function(){armarEl(false);},5000);return;}
     armarEl(false);er.hidden=true;
     fetch('/api/accion',{method:'POST',cache:'no-store',
-      headers:{'Content-Type':'application/json','X-Panel-Token':token},body:JSON.stringify({proyecto:p,eliminar:true})})
+      headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},body:JSON.stringify({proyecto:p,eliminar:true})})
       .then(function(r){if(r.status===403){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;});})
       .then(function(){delete borradores[p];history.replaceState(null,'','#');return cargarLista();})
       .catch(function(m){er.textContent=(typeof m==='string'&&m)?m:er.dataset.generico;er.hidden=false;});
@@ -955,7 +964,7 @@ JS = """
   var adj=$('ayuda-adjunto');
   function pedir(datos){
     return fetch('/api/accion',{method:'POST',cache:'no-store',
-      headers:{'Content-Type':'application/json','X-Panel-Token':token},body:JSON.stringify(datos)})
+      headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},body:JSON.stringify(datos)})
       .then(function(r){if(r.status===403&&!datos.explorar){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;return m;});});
   }
   function citar(ruta){return ruta.indexOf(' ')>-1?"'"+ruta+"'":ruta;}
@@ -975,7 +984,7 @@ JS = """
       if(!f){adj.hidden=true;return;}
       if(f.size>25*1024*1024){avisoAdj('grande',f.name);return;}
       fetch('/api/adjunto/'+encodeURIComponent(p),{method:'POST',cache:'no-store',
-        headers:{'X-Panel-Token':token,'X-Nombre':encodeURIComponent(f.name),'Content-Type':'application/octet-stream'},body:f})
+        headers:{'X-Panel-Token':token,'X-Idioma':lang,'X-Nombre':encodeURIComponent(f.name),'Content-Type':'application/octet-stream'},body:f})
         .then(function(r){return r.text().then(function(m){if(!r.ok)throw m;return m;});})
         .then(function(ruta){if(p===sel)insertar(citar(ruta));siguiente();})
         .catch(function(){avisoAdj('error',f.name);});
@@ -1190,7 +1199,7 @@ JS = """
       limites:{semana:parseInt($('aj-semana').value,10)||0,sesion:parseInt($('aj-sesion').value,10)||0}};
     if(!ajAgente)c.tope_revision=parseInt($('aj-tope').value,10)||0;
     fetch('/api/accion',{method:'POST',cache:'no-store',
-      headers:{'Content-Type':'application/json','X-Panel-Token':token},
+      headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},
       body:JSON.stringify({guardar_config:true,agente:ajAgente,config:c})})
       .then(function(r){if(r.status===403){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;});})
       .then(function(){aj.close();cargarFicha();})
@@ -1214,7 +1223,7 @@ JS = """
     var p=nP.value;
     nE.hidden=true;nL.disabled=true;nL.textContent=nL.dataset.ocupado;
     fetch('/api/accion',{method:'POST',cache:'no-store',
-      headers:{'Content-Type':'application/json','X-Panel-Token':token},
+      headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},
       body:JSON.stringify({lanzar:true,proyecto:p,tarea:nT.value||'libre',instruccion:nI.value,forzar:nF.checked,motor:$('n-motor').value,autonomia:$('n-autonomia').value})})
       .then(function(r){if(r.status===403){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;return m;});})
       .then(function(m){p=m||p;dlg.close();nI.value='';nF.checked=false;return cargarLista();})
@@ -1469,6 +1478,7 @@ class Manejador(BaseHTTPRequestHandler):
                 raise ValueError
         except Exception:
             return self._enviar(400, "400")
+        datos["_idioma"] = "en" if self.headers.get("X-Idioma") == "en" else "es"
         codigo, mensaje = accion(datos)
         self._enviar(codigo, mensaje)
 

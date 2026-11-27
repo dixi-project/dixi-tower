@@ -174,6 +174,7 @@ Los nombres anteriores (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) se siguen acepta
 | `DIXI_TOWER_HOME` | `~/.dixi-tower` | Carpeta de datos: estado, configuración, scripts de arranque y worktrees. Si solo existe `~/.dixi-tower` (instalaciones anteriores), se usa esa |
 | `DIXI_TOWER_PORT` | `4310` | Puerto del panel |
 | `DIXI_TOWER_NOTIFY` | `1` | `0` apaga las notificaciones |
+| `DIXI_TOWER_LANG` | idioma del sistema | `es` o `en`: idioma de los mensajes y de la ayuda |
 | `DIXI_TOWER_SESSION` | `dixi-tower` | Nombre de la sesión tmux de los agentes |
 
 ## Seguridad del panel

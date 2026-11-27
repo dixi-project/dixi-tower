@@ -10,6 +10,9 @@ import os
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from mensajes import t  # noqa: E402
+
 registro, raiz, nombre = sys.argv[1:4]
 try:
     datos = json.load(open(registro, encoding="utf-8"))
@@ -20,7 +23,7 @@ if nombre in datos:
 
 repo = os.path.join(raiz, nombre)
 if os.sep in nombre or nombre.startswith(".") or not os.path.exists(os.path.join(repo, ".git")):
-    sys.exit(f"No es un repositorio git dentro de {raiz}: {nombre}")
+    sys.exit(t("no_es_repo", raiz=raiz, nombre=nombre))
 
 
 def git(*args):
@@ -38,7 +41,7 @@ if not base:
 if not base:
     base = git("branch", "--show-current")
 if not base:
-    sys.exit(f"No pude determinar la rama base de {nombre}")
+    sys.exit(t("sin_rama_base", nombre=nombre))
 
 datos[nombre] = {
     "repo": repo,
@@ -49,4 +52,4 @@ os.makedirs(os.path.dirname(registro), exist_ok=True)
 with open(registro, "w", encoding="utf-8") as fh:
     json.dump(datos, fh, ensure_ascii=False, indent=2)
     fh.write("\n")
-print(f"Registrado {nombre} (rama base {base})", file=sys.stderr)
+print(t("registrado", nombre=nombre, base=base), file=sys.stderr)

@@ -41,17 +41,20 @@ ETIQUETA="com.dixi-project.dixi-tower"
 ETIQUETA_ANTERIOR="com.dixi.torre-agentes"
 PLIST="$HOME/Library/LaunchAgents/$ETIQUETA.plist"
 
+m() { python3 "$DIR/mensajes.py" "$@"; }   # mensaje en el idioma del usuario
+
 panel_responde() { curl -s -o /dev/null -m 2 "http://127.0.0.1:${1:-$PUERTO}/es/lista"; }
 
 mkdir -p "$HOME_AG/estado" "$HOME_AG/run" "$HOME_AG/worktrees"
 
 campo() { # campo <proyecto> <clave>
-  python3 - "$REG" "$1" "$2" <<'PY'
+  python3 - "$REG" "$1" "$2" "$DIR" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 p = d.get(sys.argv[2])
 if p is None:
-    sys.exit(f"Proyecto desconocido: {sys.argv[2]} (registrados: {', '.join(d)})")
+    sys.path.insert(0, sys.argv[4]); from mensajes import t
+    sys.exit(t("proyecto_desconocido", p=sys.argv[2], lista=", ".join(d)))
 print(p.get(sys.argv[3], ""))
 PY
 }
@@ -66,7 +69,7 @@ ref_base() {
 
 traer() { # git fetch de la base, solo si hay remoto; sin red no aborta
   if git -C "$1" remote get-url origin >/dev/null 2>&1; then
-    git -C "$1" fetch --quiet origin "$2" || echo "Aviso: no pude actualizar $2 desde origin; uso la copia local." >&2
+    git -C "$1" fetch --quiet origin "$2" || m sin_actualizar "base=$2" >&2
   fi
 }
 
@@ -87,8 +90,8 @@ cmd_siguiente() {
   repo="$(campo "$p" repo)"; base="$(campo "$p" base)"
   traer "$repo" "$base"
   local tope; tope="$(python3 "$DIR/config.py" valor tope_revision)"
-  if [ "$tope" = "0" ]; then echo "En revisión [r]: $(tareas "$repo" "$base" revision) (sin tope)"
-  else echo "En revisión [r]: $(tareas "$repo" "$base" revision) (tope $tope)"; fi
+  if [ "$tope" = "0" ]; then m revision_sin_tope "n=$(tareas "$repo" "$base" revision)"
+  else m revision_tope "n=$(tareas "$repo" "$base" revision)" "tope=$tope"; fi
   tareas "$repo" "$base" lista
 }
 
@@ -102,7 +105,7 @@ cmd_lanzar() {
       --autonomia|--autonomy) autonomia="${2:?falta el nivel (supervisada|equilibrada|autonoma)}"; shift ;;
       --instruccion|--instruction) instr="${2:?falta el archivo de la instrucción}"; shift ;;
       "") ;;
-      *) echo "Opción desconocida: $1" >&2; exit 1 ;;
+      *) m opcion_desconocida "op=$1" >&2; exit 1 ;;
     esac
     shift
   done
@@ -133,7 +136,7 @@ cmd_lanzar() {
   [ "$id" = "free" ] && id="libre"
   if [ "$id" = "libre" ]; then
     if [ -z "$instr" ] || [ ! -s "$instr" ]; then
-      echo "Sin tarea del tablero hace falta una instrucción." >&2; exit 1
+      m falta_instruccion >&2; exit 1
     fi
     fila="$(python3 "$DIR/tareas.py" slug < "$instr")"
     titulo="$(printf '%s' "$fila" | cut -f1)"
@@ -152,7 +155,7 @@ cmd_lanzar() {
   local wt="$HOME_AG/worktrees/$p/$clave"
   # Dos agentes nunca comparten worktree: la misma tarea no se lanza dos veces a la vez.
   if tmux list-windows -t "$SESION" -F '#W' 2>/dev/null | python3 "$DIR/ocupado.py" "$HOME_AG/estado" "$wt"; then
-    echo "Esa tarea ya tiene un agente vivo en $p; elige otra tarea o detén ese agente." >&2; exit 1
+    m tarea_ocupada "p=$p" >&2; exit 1
   fi
   if [ ! -d "$wt" ]; then
     mkdir -p "$(dirname "$wt")"
@@ -198,19 +201,19 @@ PY2
     tmux new-session -d -s "$SESION" -n "$ag" "$run"
   fi
   echo "AGENTE=$ag"
-  echo "Agente lanzado: $ag · $id · $rama"
-  echo "Worktree: $wt"
+  m lanzado "ag=$ag" "id=$id" "rama=$rama"
+  m worktree "wt=$wt"
 }
 
 cmd_estado() { python3 "$DIR/estado.py" "$HOME_AG" "$REG" "$SESION"; }
 
 cmd_ver() {
-  ventana_viva "$1" || { echo "No hay ventana viva para $1" >&2; exit 1; }
+  ventana_viva "$1" || { m sin_ventana "ag=$1" >&2; exit 1; }
   tmux capture-pane -p -t "$SESION:$1" -S "-${2:-40}"
 }
 
 cmd_decir() {
-  ventana_viva "$1" || { echo "No hay ventana viva para $1" >&2; exit 1; }
+  ventana_viva "$1" || { m sin_ventana "ag=$1" >&2; exit 1; }
   # Como el panel: pegado entre corchetes y una pausa antes de Enter. Codex trata el
   # texto que llega muy rápido como un pegado y se tragaría un Enter inmediato.
   printf '%s' "$2" | tmux load-buffer -b dixi-tower-decir -
@@ -220,6 +223,7 @@ cmd_decir() {
 }
 
 cmd_detener() {
+  if [ ! -f "$HOME_AG/estado/$1.json" ] && ! ventana_viva "$1"; then m desconocido "ag=$1" >&2; exit 1; fi
   ventana_viva "$1" && tmux kill-window -t "$SESION:$1"
   python3 - "$HOME_AG/estado/$1.json" <<'PY'
 import json, sys, time, os
@@ -229,13 +233,13 @@ if os.path.exists(f):
     d.update(estado="cerrado", detalle="detenido por la torre", actualizado=time.time())
     json.dump(d, open(f, "w"), ensure_ascii=False, indent=1)
 PY
-  echo "Detenido: $1 (el worktree y la rama se conservan)"
+  m detenido "ag=$1"
 }
 
 cmd_reanudar() {
   local ag="$1"
-  [ -f "$HOME_AG/estado/$ag.json" ] || { echo "No conozco al agente $ag." >&2; exit 1; }
-  if ventana_viva "$ag"; then echo "El agente $ag ya está encendido." >&2; exit 1; fi
+  [ -f "$HOME_AG/estado/$ag.json" ] || { m desconocido "ag=$ag" >&2; exit 1; }
+  if ventana_viva "$ag"; then m ya_encendido "ag=$ag" >&2; exit 1; fi
   # Mismo worktree y reglas; retoma la conversación con el motor y la autonomía
   # que tenga configurados ahora.
   local nuevo
@@ -245,13 +249,13 @@ cmd_reanudar() {
   else
     tmux new-session -d -s "$SESION" -n "$ag" "$nuevo"
   fi
-  echo "Agente reanudado: $ag"
+  m reanudado "ag=$ag"
 }
 
 cmd_eliminar() {
   local ag="$1" est="$HOME_AG/estado/$1.json"
-  [ -f "$est" ] || { echo "No conozco al agente $ag." >&2; exit 1; }
-  if ventana_viva "$ag"; then echo "El agente $ag está encendido: detenlo antes de eliminarlo." >&2; exit 1; fi
+  [ -f "$est" ] || { m desconocido "ag=$ag" >&2; exit 1; }
+  if ventana_viva "$ag"; then m encendido_no_eliminar "ag=$ag" >&2; exit 1; fi
   local wt rama
   wt="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("worktree") or "")' "$est")"
   rama="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("rama") or "")' "$est")"
@@ -259,21 +263,21 @@ cmd_eliminar() {
   if [ -n "$wt" ] && [ -d "$wt" ]; then
     case "$wt" in
       "$HOME_AG/worktrees/"*) ;;
-      *) echo "El worktree no está dentro de $HOME_AG/worktrees; no lo borro: $wt" >&2; exit 1 ;;
+      *) m worktree_fuera "dir=$HOME_AG/worktrees" "wt=$wt" >&2; exit 1 ;;
     esac
     local sucios
     sucios="$(git -C "$wt" status --porcelain | wc -l | tr -d ' ')"
     if [ "$sucios" != "0" ]; then
-      echo "No lo elimino: tiene $sucios archivos sin commit en $wt. Haz commit o descártalos primero." >&2; exit 1
+      m sin_commit "n=$sucios" "wt=$wt" >&2; exit 1
     fi
     # Sin --force: git se niega si queda algo sin guardar. La rama no se borra,
     # así que los commits del agente siguen en el repositorio.
-    git -C "$wt" worktree remove "$wt" || { echo "git no pudo quitar el worktree $wt." >&2; exit 1; }
+    git -C "$wt" worktree remove "$wt" || { m git_no_quita "wt=$wt" >&2; exit 1; }
   fi
   rm -f "$est" "$HOME_AG/run/$ag.sh" "$HOME_AG/run/$ag.prompt.txt" "$HOME_AG/run/$ag.reanudar.sh"
   rm -f "$HOME_AG/run/$ag.reglas.md" "$HOME_AG/uso/$ag.json" "$HOME_AG/uso/$ag.subagentes.json"
   rm -rf "$HOME_AG/adjuntos/$ag"
-  echo "Eliminado: $ag. La rama ${rama:-del agente} se conserva en el repositorio."
+  m eliminado "ag=$ag" "rama=${rama:--}"
 }
 
 case "${1:-}" in
@@ -286,21 +290,21 @@ case "${1:-}" in
   reanudar|resume) cmd_reanudar "${2:?agente}" ;;
   eliminar|delete) cmd_eliminar "${2:?agente}" ;;
   doctor)    python3 "$DIR/doctor.py" "$PUERTO" "$PLIST" ;;
-  abrir|attach) echo "tmux attach -t $SESION    (Ctrl-b n: siguiente ventana · Ctrl-b d: salir sin detenerlos)" ;;
+  abrir|attach) m attach "s=$SESION" ;;
   panel)
     puerto="${2:-$PUERTO}"
     if panel_responde "$puerto"; then
-      echo "El panel ya está corriendo."
+      m panel_corriendo
     elif tmux has-session -t "$SESION" 2>/dev/null; then
       tmux new-window -d -t "$SESION" -n panel "python3 '$DIR/panel.py' $puerto"
     else
       tmux new-session -d -s "$SESION" -n panel "python3 '$DIR/panel.py' $puerto"
     fi
-    echo "Panel: http://localhost:$puerto/"
+    m panel_url "url=http://localhost:$puerto/"
     ;;
   servicio|service)
     if [ "$(uname)" != "Darwin" ]; then
-      echo "El servicio automático solo existe en macOS. En este sistema usa: dixi-tower panel" >&2; exit 1
+      m servicio_solo_macos >&2; exit 1
     fi
     dominio="gui/$(id -u)"
     case "${2:-estado}" in
@@ -333,23 +337,23 @@ PYS
         rm -f "$HOME/Library/LaunchAgents/$ETIQUETA_ANTERIOR.plist"
         launchctl bootstrap "$dominio" "$PLIST"
         sleep 2
-        if panel_responde; then echo "Servicio instalado. Panel: http://localhost:$PUERTO/"
-        else echo "El servicio se instaló pero el panel no responde; revisa $HOME_AG/panel.log" >&2; exit 1; fi
+        if panel_responde; then m servicio_instalado "url=http://localhost:$PUERTO/"
+        else m servicio_sin_respuesta "log=$HOME_AG/panel.log" >&2; exit 1; fi
         ;;
       quitar|uninstall)
         launchctl bootout "$dominio/$ETIQUETA" 2>/dev/null || true
         rm -f "$PLIST"
-        echo "Servicio quitado. Para levantar el panel a mano: dixi-tower panel"
+        m servicio_quitado
         ;;
       reiniciar|restart)
         launchctl kickstart -k "$dominio/$ETIQUETA" && sleep 2
-        if panel_responde; then echo "Panel reiniciado: http://localhost:$PUERTO/"; else echo "El panel no responde; revisa $HOME_AG/panel.log" >&2; exit 1; fi
+        if panel_responde; then m panel_reiniciado "url=http://localhost:$PUERTO/"; else m panel_no_responde "log=$HOME_AG/panel.log" >&2; exit 1; fi
         ;;
       estado|status)
-        if [ -f "$PLIST" ]; then echo "Servicio: instalado ($PLIST)"; else echo "Servicio: no instalado"; fi
-        if panel_responde; then echo "Panel: responde en http://localhost:$PUERTO/"; else echo "Panel: no responde"; fi
+        if [ -f "$PLIST" ]; then m servicio_si "plist=$PLIST"; else m servicio_no; fi
+        if panel_responde; then m panel_si "url=http://localhost:$PUERTO/"; else m panel_no; fi
         ;;
-      *) echo "Uso: dixi-tower servicio instalar|quitar|reiniciar|estado" >&2; exit 1 ;;
+      *) m uso_servicio >&2; exit 1 ;;
     esac
     ;;
   *)

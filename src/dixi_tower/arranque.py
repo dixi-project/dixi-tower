@@ -16,6 +16,7 @@ import sys
 import time
 
 import config
+from mensajes import t
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 HOME_AG = config.HOME_AG
@@ -66,10 +67,10 @@ def main():
     try:
         estado = json.load(open(ruta_estado, encoding="utf-8"))
     except Exception:
-        sys.exit(f"No conozco al agente {agente}.")
+        sys.exit(t("desconocido", ag=agente))
     wt = estado.get("worktree") or ""
     if not os.path.isdir(wt):
-        sys.exit(f"El worktree de este agente ya no existe: {wt}")
+        sys.exit(t("worktree_no_existe", wt=wt))
     conf = config.de_agente(agente)
     motor, autonomia = conf["motor"], conf["autonomia"]
     proyecto = estado.get("proyecto") or agente
@@ -127,11 +128,11 @@ def main():
         # Motor definido por el usuario: su propio comando, tal cual lo escribió.
         propio = config.motores_propios().get(motor)
         if not propio:
-            sys.exit(f"El motor «{motor}» ya no está definido en la configuración.")
+            sys.exit(t("motor_no_definido", motor=motor))
         if modo == "inicial":
             plantilla, encargo = propio["comando"], f'"$(cat {q(sys.argv[3])})"'
         else:
-            plantilla, encargo = propio.get("reanudar") or propio["comando"], q("Continúa con el encargo anterior.")
+            plantilla, encargo = propio.get("reanudar") or propio["comando"], q(t("continua"))
         orden = "exec " + plantilla.replace("{instruccion}", encargo).replace("{reglas}", f'"$(cat {q(reglas)})"')
     else:
         opciones = opciones_codex(agente, autonomia, conf["subagentes"], reglas)
