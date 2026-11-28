@@ -135,8 +135,7 @@ The left column is your list of agents; the right side shows the selected agent.
 
 | Option | What it decides |
 |---|---|
-| **Use the default** | The `DIXI_TOWER_PROJECTS` variable or, if it is not set, `~/projects`. The tab tells you which one it is and where it comes from |
-| **This folder** | The path you type or pick with **Choose…** (browsing is limited to your home folder; a path outside it can be typed by hand) |
+| **Default projects folder** | The path you type or pick with **Choose…** (browsing is limited to your home folder; a path outside it can be typed by hand). It is yours: it is saved in your `config.json`. Until you save it, the field shows a suggestion (`DIXI_TOWER_PROJECTS` or `~/projects`) and the panel warns you on opening if that folder does not exist. It is only saved if you change something in the tab |
 | **None** | No projects folder: every agent you launch asks for the repository path |
 
 **Tasks**

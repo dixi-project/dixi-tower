@@ -133,8 +133,7 @@ La columna izquierda es tu lista de agentes; a la derecha está el agente elegid
 
 | Opción | Qué decide |
 |---|---|
-| **Usar la predeterminada** | La de la variable `DIXI_TOWER_PROJECTS` o, si no existe, `~/projects`. La pestaña dice cuál es y de dónde sale |
-| **Esta carpeta** | La ruta que escribes o eliges con **Elegir…** (solo se puede navegar dentro de tu carpeta personal; una ruta de fuera se puede escribir a mano) |
+| **Carpeta de proyectos por defecto** | La ruta que escribes o eliges con **Elegir…** (solo se puede navegar dentro de tu carpeta personal; una ruta de fuera se puede escribir a mano). Es tuya: se guarda en tu `config.json`. Mientras no la guardes, el campo muestra una sugerencia (`DIXI_TOWER_PROJECTS` o `~/projects`) y el panel te avisa al abrirlo si esa carpeta no existe. Solo se guarda si cambias algo en la pestaña |
 | **Ninguna** | No hay carpeta de proyectos: al lanzar cada agente se pide la ruta del repositorio |
 
 **Tareas**

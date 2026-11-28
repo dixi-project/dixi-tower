@@ -50,7 +50,7 @@ Changed from the panel: **Settings** in the sidebar (values every new agent star
 | Autonomy | `supervisada` (supervised), `equilibrada` (balanced), `autonoma` (autonomous) | When the agent is turned on |
 | Subagents | allowed or not, and maximum open at a time (1 to 20) | Claude: immediately. Codex: when turned on |
 | Weekly and 5-hour session usage limit | percentage of the account; 0 = no limit | Claude: immediately. Codex: shown, not enforced |
-| Projects folder (Projects tab, key `carpeta_proyectos`) | the default (environment variable or `~/projects`), a folder, or none (each repository's path is asked for) | Immediately, no panel restart. Wins over the environment variable |
+| Projects folder (Projects tab, key `carpeta_proyectos`) | a default folder you choose (unsaved, only the environment variable or `~/projects` is suggested), or none (each repository's path is asked for) | Immediately, no panel restart. Wins over the environment variable |
 | In-review task limit and board address (Tasks tab, keys `tope_revision` and `tablero`) | number (0 = no limit) and an optional `http(s)://` URL | At launch; the link, on reload |
 
 How autonomy maps to each engine:

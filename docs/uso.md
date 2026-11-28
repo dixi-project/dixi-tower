@@ -50,7 +50,7 @@ Se cambia desde el panel: **Configuración** (valores con los que nace cada agen
 | Autonomía | `supervisada`, `equilibrada`, `autonoma` | Al encender el agente |
 | Subagentes | permitidos o no, y máximo abiertos a la vez (1 a 20) | Claude: de inmediato. Codex: al encender |
 | Límite de uso semanal y de sesión (5 h) | porcentaje de la cuenta; 0 = sin límite | Claude: de inmediato. Codex: se muestra, no se aplica |
-| Carpeta de proyectos (pestaña Proyectos, clave `carpeta_proyectos`) | la predeterminada (variable de entorno o `~/projects`), una carpeta o ninguna (se pide la ruta de cada repo) | De inmediato, sin reiniciar el panel. Manda sobre la variable de entorno |
+| Carpeta de proyectos (pestaña Proyectos, clave `carpeta_proyectos`) | una carpeta por defecto que eliges tú (sin guardar, solo se sugiere la de la variable de entorno o `~/projects`) o ninguna (se pide la ruta de cada repo) | De inmediato, sin reiniciar el panel. Manda sobre la variable de entorno |
 | Tope de tareas en revisión y dirección del tablero (pestaña Tareas, claves `tope_revision` y `tablero`) | número (0 = sin tope) y URL `http(s)://` opcional | Al lanzar; el enlace, al recargar |
 
 Cómo se traduce la autonomía en cada motor:
