@@ -20,6 +20,7 @@ export PATH="$T/bin:$PATH"
 fallos=0
 ok()   { echo "  ok   $1"; }
 mal()  { echo "  FAIL $1"; fallos=$((fallos + 1)); }
+# Sin grep -q tras una tubería: con pipefail, cerrarla antes de tiempo cuenta como fallo.
 debe() { echo "  ...  $1"; if eval "$2" >/dev/null 2>&1; then ok "$1"; else mal "$1"; fi; }
 responde() { curl -s -o /dev/null -m 2 "http://127.0.0.1:$P/en/lista"; }
 espera() { local i; for i in $(seq 1 40); do eval "$1" >/dev/null 2>&1 && return 0; sleep 0.5; done; return 1; }
@@ -37,8 +38,8 @@ debe "hay systemd de usuario" "systemctl --user show-environment"
 debe "se instala y el panel responde" "'$DT' service install && responde"
 debe "la unidad usa KillMode=process y Restart=always" "grep -qx 'KillMode=process' '$U' && grep -qx 'Restart=always' '$U'"
 debe "queda habilitado para arrancar solo" "systemctl --user is-enabled dixi-tower.service"
-debe "estado lo ve instalado y respondiendo" "'$DT' service status | grep -q 'installed' && '$DT' service status | grep -q 'responding'"
-debe "doctor ve el servicio" "'$DT' doctor | grep -q '✓ Service'"
+debe "estado lo ve instalado y respondiendo" "'$DT' service status | grep 'installed' && '$DT' service status | grep 'responding'"
+debe "doctor ve el servicio" "'$DT' doctor | grep '✓ Service'"
 debe "el panel del servicio usa las carpetas indicadas" "[ -f '$DIXI_TOWER_HOME/panel.token' ] && curl -s http://127.0.0.1:$P/en/carpetas | grep -q demo"
 debe "se lanza un agente" "'$DT' launch demo free --instruction '$T/encargo.txt' && tmux list-windows -t '=dixi-tower' -F '#W' | grep -qx demo"
 debe "reiniciar el servicio no mata a los agentes" "'$DT' service restart && responde && tmux list-windows -t '=dixi-tower' -F '#W' | grep -qx demo"
