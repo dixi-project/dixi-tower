@@ -555,8 +555,9 @@ def info_carpeta():
     efectiva, origen = config.carpeta_proyectos(), config.origen_carpeta()
     modo = ("ninguna" if not efectiva else "carpeta") if origen == "config" else "predeterminada"
     entorno = next((v for v in ("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR") if os.environ.get(v)), "predeterminada")
+    disponible = bool(efectiva) and os.path.isdir(efectiva)
     return {"modo": modo, "valor": efectiva if modo == "carpeta" else "", "efectiva": efectiva,
-            "origen": origen, "disponible": bool(efectiva) and os.path.isdir(efectiva),
+            "origen": origen, "disponible": disponible, "elegir": modo == "predeterminada" and not disponible,
             "base": config.entorno("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects")),
             "base_origen": entorno}
 
@@ -863,6 +864,8 @@ input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--borde);bor
 .tope{margin:8px 0 0;padding:8px 12px;border:1px solid var(--ambar);border-radius:8px;color:var(--ambar);font-size:13px}
 #apagado{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--codigo);border-radius:0 0 8px 8px;padding:12px;font-size:13px}
 #r-error{color:var(--rojo);flex-basis:100%}
+#aviso-carpeta{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin:0 0 10px;padding:8px 12px;border:1px solid var(--ambar);border-radius:8px}
+#aviso-carpeta[hidden]{display:none}
 dialog{border:1px solid var(--borde);border-radius:12px;background:var(--panel);color:var(--texto);padding:20px 22px;width:min(580px,92vw)}
 dialog::backdrop{background:rgba(0,0,0,.5)}
 dialog p{margin:6px 0 0;font-size:13px}
@@ -1269,14 +1272,20 @@ JS = """
     return fetch('/api/config'+(agente?'/'+encodeURIComponent(agente):''),{cache:'no-store'})
       .then(function(r){if(!r.ok)throw 0;return r.json();});
   }
-  function rellenarCarpeta(cp){
-    var origen=$('aj-origenes').getAttribute('data-'+cp.base_origen)||cp.base_origen;
-    $('aj-c-pred').textContent=$('aj-c-pred').dataset.plantilla.replace('{carpeta}',function(){return cp.base;}).replace('{origen}',function(){return origen;});
-    document.querySelector('input[name=aj-cmodo][value='+(cp.modo==='carpeta'?'carpeta':cp.modo==='ninguna'?'ninguna':'predeterminada')+']').checked=true;
-    $('aj-carpeta').value=cp.valor||'';
-    $('aj-c-aviso').hidden=cp.disponible||cp.modo==='ninguna';
+  var ajCarpeta0={modo:null,ruta:''};
+  function estadoCarpeta(){
+    var r=document.querySelector('input[name=aj-cmodo]:checked');
+    return {modo:r?r.value:null,ruta:$('aj-carpeta').value.trim()};
   }
-  function abrirAjustes(agente){
+  function rellenarCarpeta(cp){
+    var r=document.querySelector('input[name=aj-cmodo]:checked');if(r)r.checked=false;
+    if(cp.modo!=='predeterminada')document.querySelector('input[name=aj-cmodo][value='+cp.modo+']').checked=true;
+    $('aj-carpeta').value=cp.modo==='carpeta'?cp.valor:(cp.base||'');
+    $('aj-c-sugerida').hidden=cp.modo!=='predeterminada';
+    $('aj-c-aviso').hidden=cp.disponible||cp.modo==='ninguna';
+    ajCarpeta0=estadoCarpeta();
+  }
+  function abrirAjustes(agente,pestana){
     leerConfig(agente).then(function(d){
       var c=d.config,modo=agente?'agente':'global';
       ajAgente=agente||null;ajE.hidden=true;
@@ -1292,11 +1301,12 @@ JS = """
         ajTablero=d.tablero||'';$('aj-tablero').value=ajTablero;
         rellenarCarpeta(d.carpeta_proyectos);
       }
-      mostrarPestana('agentes',false);
+      mostrarPestana(pestana||'agentes',!!pestana);
       aj.showModal();
     }).catch(mal);
   }
   $('abrir-config').addEventListener('click',function(){abrirAjustes(null);});
+  $('aviso-carpeta-abrir').addEventListener('click',function(){abrirAjustes(null,'proyectos');});
   ficha.addEventListener('click',function(ev){if(ev.target.closest('[data-ajustes]')&&sel)abrirAjustes(sel);});
   $('aj-sub').addEventListener('change',function(){$('aj-submax').disabled=!$('aj-sub').checked;});
   $('aj-cancelar').addEventListener('click',function(){aj.close();});
@@ -1313,18 +1323,23 @@ JS = """
       limites:{semana:parseInt($('aj-semana').value,10)||0,sesion:parseInt($('aj-sesion').value,10)||0}};
     if(!ajAgente){
       c.tope_revision=parseInt($('aj-tope').value,10)||0;
-      var modo=document.querySelector('input[name=aj-cmodo]:checked').value,ruta=$('aj-carpeta').value.trim();
-      if(modo==='carpeta'&&!ruta){
+      var cs=estadoCarpeta();
+      if(cs.modo==='carpeta'&&!cs.ruta){
         mostrarPestana('proyectos',true);ajE.textContent=ajE.dataset.sinruta;ajE.hidden=false;return;
       }
-      c.carpeta_proyectos=modo==='predeterminada'?null:modo==='ninguna'?'':ruta;
+      if(cs.modo&&(cs.modo!==ajCarpeta0.modo||cs.ruta!==ajCarpeta0.ruta))c.carpeta_proyectos=cs.modo==='ninguna'?'':cs.ruta;
       c.tablero=$('aj-tablero').value.trim();
     }
     fetch('/api/accion',{method:'POST',cache:'no-store',
       headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},
       body:JSON.stringify({guardar_config:true,agente:ajAgente,config:c})})
       .then(function(r){if(r.status===403){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;});})
-      .then(function(){aj.close();if(!ajAgente&&c.tablero!==ajTablero)location.reload();else cargarFicha();})
+      .then(function(){
+        aj.close();
+        if(!ajAgente&&c.tablero!==ajTablero){location.reload();return;}
+        if(!ajAgente)leerConfig(null).then(function(d){$('aviso-carpeta').hidden=!d.carpeta_proyectos.elegir;}).catch(function(){});
+        cargarFicha();
+      })
       .catch(function(m){ajE.textContent=(typeof m==='string'&&m)?m:ajE.dataset.generico;ajE.hidden=false;});
   });
 
@@ -1398,6 +1413,10 @@ JS = """
 def pagina(idioma):
     t = CAT[idioma]
     e = html.escape
+    cp = info_carpeta()
+    aviso_carpeta = (f'<div id="aviso-carpeta" role="status"{"" if cp["elegir"] else " hidden"}>'
+                     f'<p><strong>{e(t["aviso_carpeta_titulo"])}</strong> {e(t["aviso_carpeta_texto"].format(carpeta=cp["efectiva"]))}</p>'
+                     f'<button type="button" class="b primario" id="aviso-carpeta-abrir">{e(t["aviso_carpeta_boton"])}</button></div>')
     alternos = "".join(f'<link rel="alternate" hreflang="{i}" href="/{i}/">' for i in IDIOMAS)
     selector = " · ".join(
         f'<a href="/{i}/" hreflang="{i}"' + (' aria-current="page"' if i == idioma else "") + f">{i.upper()}</a>"
@@ -1447,6 +1466,7 @@ def pagina(idioma):
   </div>
 </aside>
 <main>
+  {aviso_carpeta}
   <div id="fuera" role="alert"><span>{e(t["sin_conexion"])}</span><button type="button" class="b" id="reintentar">{e(t["reintentar"])}</button></div>
   <p id="vacio">{e(t["elige"])}</p>
   <div id="detalle" hidden>
@@ -1544,10 +1564,9 @@ def pagina(idioma):
     <div role="tabpanel" id="pan-proyectos" aria-labelledby="tab-proyectos" hidden>
       <fieldset>
         <legend>{e(t["carpeta_label"])}</legend>
-        <span id="aj-origenes" data-DIXI_TOWER_PROJECTS="{e(t["carpeta_origen_DIXI_TOWER_PROJECTS"], quote=True)}" data-DIXI_PROYECTOS_DIR="{e(t["carpeta_origen_DIXI_PROYECTOS_DIR"], quote=True)}" data-predeterminada="{e(t["carpeta_origen_predeterminada"], quote=True)}" hidden></span>
-        <label class="fila"><input type="radio" name="aj-cmodo" value="predeterminada"> <span id="aj-c-pred" data-plantilla="{e(t["carpeta_modo_predeterminada"], quote=True)}"></span></label>
         <label class="fila"><input type="radio" name="aj-cmodo" value="carpeta"> {e(t["carpeta_modo_carpeta"])}</label>
         <span class="ruta-fila"><input type="text" id="aj-carpeta" autocomplete="off" spellcheck="false" aria-label="{e(t["carpeta_modo_carpeta"], quote=True)}"><button type="button" class="b" id="aj-elegir">{e(t["carpeta_elegir"])}</button></span>
+        <p class="tenue" id="aj-c-sugerida" hidden>{e(t["carpeta_sugerida"])}</p>
         <label class="fila"><input type="radio" name="aj-cmodo" value="ninguna"> {e(t["carpeta_modo_ninguna"])}</label>
       </fieldset>
       <p class="tenue">{e(t["carpeta_ayuda"])}</p>

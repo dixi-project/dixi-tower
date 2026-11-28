@@ -12,10 +12,12 @@ Cambios de Dixi Tower por versión. El formato sigue [Keep a Changelog](https://
 - La carpeta de proyectos se elige en Configuración › Proyectos (con explorador «Elegir…»), se aplica sin reiniciar el panel y manda sobre `DIXI_TOWER_PROJECTS`. También puede quedar en «ninguna».
 - Lanzar un repositorio de cualquier sitio por su ruta absoluta: desde el panel («Otro repositorio (ruta)…») y desde la terminal (`dixi-tower launch /ruta/al/repo …`). La ruta se valida en el servidor.
 - La dirección del tablero de tareas se edita en Configuración › Tareas.
-- Pruebas de lo anterior (`tests/configuracion.sh`) en la integración continua.
+- Aviso de primera vez en la página principal cuando no has guardado una carpeta de proyectos y la sugerida no existe; su botón abre Configuración › Proyectos.
+- Pruebas de lo anterior (`tests/configuracion.sh`, `tests/aviso-carpeta.sh`) en la integración continua.
 
 ### Cambiado
 
+- Configuración › Proyectos: un solo campo «Carpeta de proyectos por defecto» prellenado con una sugerencia, sin la opción «Usar la predeterminada»; la carpeta solo se guarda si cambias algo en la pestaña.
 - Guardar la configuración global conserva las claves que el panel no gestiona (motores propios, tablero, carpeta y cualquier otra).
 - `dixi-tower doctor` dice de dónde sale la carpeta de proyectos.
 - `dixi-tower next` imprime su salida de una vez.
