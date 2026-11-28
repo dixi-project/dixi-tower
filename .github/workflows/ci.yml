@@ -41,6 +41,29 @@ jobs:
       - name: Prueba de humo contra el wheel instalado
         run: tests/wheel.sh
 
+  servicio:
+    name: Servicio con systemd (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Instalar tmux y preparar systemd de usuario
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq tmux
+          git config --global user.name "Dixi Tower CI"
+          git config --global user.email "ci@example.com"
+          sudo loginctl enable-linger "$USER"
+          for i in $(seq 1 20); do [ -S "/run/user/$(id -u)/bus" ] && break; sleep 0.5; done
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+      - name: tests/servicio.sh
+        run: timeout -k 10 300 tests/servicio.sh
+      - name: Registro del panel y del servicio
+        if: always()
+        run: |
+          systemctl --user status dixi-tower.service --no-pager || true
+          journalctl --user -u dixi-tower.service --no-pager -n 50 || true
+
   linux:
     name: Debian 12 con Docker
     runs-on: ubuntu-latest

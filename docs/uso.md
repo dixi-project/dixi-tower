@@ -18,9 +18,9 @@ dixi-tower servicio quitar
 dixi-tower panel                # alternativa sin servicio: lo levanta en tmux
 ```
 
-El servicio es un LaunchAgent (`~/Library/LaunchAgents/com.dixi-project.dixi-tower.plist`): arranca al iniciar sesión en la Mac y launchd lo relanza si se cae, sin depender de tmux. Su salida va a `~/.dixi-tower/panel.log`. Guarda el `PATH` del momento en que se instaló; si cambia dónde viven `tmux`, `git`, `gh` o `claude`, hay que reinstalarlo.
+En macOS el servicio es un LaunchAgent (`~/Library/LaunchAgents/com.dixi-project.dixi-tower.plist`): arranca al iniciar sesión en la Mac y launchd lo relanza si se cae, sin depender de tmux. Su salida va a `~/.dixi-tower/panel.log`. Guarda el `PATH` del momento en que se instaló; si cambia dónde viven `tmux`, `git`, `gh` o `claude`, hay que reinstalarlo.
 
-En Linux y en Windows (WSL2) no hay servicio: el panel se levanta con `dixi-tower panel`. Para preparar Windows, ver [el manual](manual.es.md#en-windows-wsl2).
+En Linux y en Windows (WSL2) es un servicio de usuario de systemd (`~/.config/systemd/user/dixi-tower.service`), habilitado para arrancar con tu sesión y relanzado si se cae. Usa `KillMode=process`: reiniciar o detener el panel no detiene a los agentes que corren en tmux. También guarda el `PATH` del momento de instalarlo y escribe en `panel.log` de la carpeta de datos. En WSL, `servicio instalar` activa además el *linger* (para que arranque sin abrir una terminal; si no puede, muestra el comando `sudo loginctl enable-linger`) y añade «Dixi Tower» a las aplicaciones de inicio de Windows (`HKCU\…\Run`, visible en el Administrador de tareas), que al iniciar sesión ejecuta `conhost.exe --headless wsl.exe …`: despierta la distribución sin ventana y la mantiene encendida. No usa VBScript, que Windows está retirando. Sin systemd (algunos contenedores, o WSL con systemd apagado) explica qué hacer; `dixi-tower panel` funciona siempre. Para preparar Windows, ver [el manual](manual.es.md#en-windows-wsl2).
 
 Desde el panel se hace todo lo demás: lanzar un agente («＋ Nuevo agente»), ver su consola, escribirle, mandarle teclas y detenerlo.
 

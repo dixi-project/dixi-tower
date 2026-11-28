@@ -31,9 +31,23 @@ for puerto in 3389 22; do
   aws ec2 authorize-security-group-ingress --group-id "$SG" --protocol tcp --port "$puerto" --cidr "$MI_IP" >/dev/null
 done
 
+# Al primer arranque, EC2Launch deja SSH listo con la llave de la prueba (sin pasar
+# por el escritorio remoto). Si fallara, el bloque del final hace lo mismo a mano.
+cat > "$E/user-data.txt" <<EOF
+<powershell>
+if (-not (Get-Service sshd -ErrorAction SilentlyContinue)) { Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0 | Out-Null }
+Set-Service sshd -StartupType Automatic; Start-Service sshd
+\$f = "\$env:ProgramData\\ssh\\administrators_authorized_keys"
+Set-Content -Path \$f -Encoding ascii -Value '$(cat "$E/id_prueba.pub")'
+icacls \$f /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F" | Out-Null
+Enable-NetFirewallRule -Name 'OpenSSH-Server-In-TCP'; Set-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -Profile Any
+New-ItemProperty -Path 'HKLM:\\SOFTWARE\\OpenSSH' -Name DefaultShell -Value 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe' -PropertyType String -Force | Out-Null
+</powershell>
+EOF
+
 ETIQUETAS="[{Key=Name,Value=$NOMBRE},{Key=Proyecto,Value=dixi-tower}]"
 aws ec2 run-instances --image-id "$AMI" --instance-type "$TIPO" --count 1 \
-  --key-name "$NOMBRE" --security-group-ids "$SG" \
+  --key-name "$NOMBRE" --security-group-ids "$SG" --user-data "file://$E/user-data.txt" \
   --cpu-options NestedVirtualization=enabled --metadata-options HttpTokens=required \
   --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":80,"VolumeType":"gp3","DeleteOnTermination":true}}]' \
   --tag-specifications "ResourceType=instance,Tags=$ETIQUETAS" "ResourceType=volume,Tags=$ETIQUETAS" \
@@ -58,7 +72,8 @@ cat <<EOF
 Lista. Escritorio remoto: $IP, usuario Administrator.
 Copia la contraseña sin mostrarla:   tr -d '\r\n' < "$E/contrasena.txt" | pbcopy
 
-Para entrar por SSH, pega esto en PowerShell (Admin) dentro de la máquina:
+SSH queda listo solo unos minutos después del arranque. Si no respondiera, pega esto
+en PowerShell (Admin) dentro de la máquina:
 
 if (-not (Get-Service sshd -ErrorAction SilentlyContinue)) { Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0 | Out-Null }
 Set-Service sshd -StartupType Automatic; Start-Service sshd

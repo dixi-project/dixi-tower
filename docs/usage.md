@@ -11,16 +11,16 @@ How to use Dixi Tower day to day: commands, settings, internals and rules.
 Every command has an English and a Spanish name (`launch`/`lanzar`, `status`/`estado`, `stop`/`detener`…). `dixi-tower doctor` checks requirements and installation.
 
 ```bash
-dixi-tower service install      # panel always on at http://localhost:4310/ (macOS)
+dixi-tower service install      # panel always on at http://localhost:4310/
 dixi-tower service restart      # after changing panel.py or the catalogs
 dixi-tower service status       # installed? responding?
 dixi-tower service uninstall
 dixi-tower panel                # without the service: runs the panel inside tmux
 ```
 
-The service is a LaunchAgent (`~/Library/LaunchAgents/com.dixi-project.dixi-tower.plist`): it starts when you log in and launchd restarts it if it crashes, independently of tmux. Its output goes to `~/.dixi-tower/panel.log`. It stores the `PATH` from the moment it was installed; if `tmux`, `git`, `gh` or your engine move, reinstall it.
+On macOS the service is a LaunchAgent (`~/Library/LaunchAgents/com.dixi-project.dixi-tower.plist`): it starts when you log in and launchd restarts it if it crashes, independently of tmux. Its output goes to `~/.dixi-tower/panel.log`. It stores the `PATH` from the moment it was installed; if `tmux`, `git`, `gh` or your engine move, reinstall it.
 
-On Linux and on Windows (WSL2) there is no service: start the panel with `dixi-tower panel`. For Windows setup, see [the manual](manual.md#on-windows-wsl2).
+On Linux and on Windows (WSL2) it is a systemd user service (`~/.config/systemd/user/dixi-tower.service`), enabled to start with your session and restarted if it crashes. It uses `KillMode=process`, so restarting or stopping the panel does not stop the agents running in tmux. It also stores the `PATH` from install time, and logs to `panel.log` in the data folder. On WSL, `service install` also enables lingering (so the service starts without a terminal; if it cannot, it prints the `sudo loginctl enable-linger` command) and adds a "Dixi Tower" entry to the Windows startup apps (`HKCU\…\Run`, visible in Task Manager) that runs `conhost.exe --headless wsl.exe …` at sign-in: it wakes the distribution with no window and keeps it running. It does not use VBScript, which Windows is phasing out. Without systemd (some containers, or WSL with systemd off) it explains what to do; `dixi-tower panel` always works. For Windows setup, see [the manual](manual.md#on-windows-wsl2).
 
 Everything else is done from the panel: launch an agent (**＋ New agent**), watch its console, type to it, send keys and stop it.
 

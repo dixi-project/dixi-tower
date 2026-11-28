@@ -4,7 +4,14 @@
 
 Cambios de Dixi Tower por versión. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
-## [0.1.0] — sin publicar
+## [Sin publicar]
+
+### Añadido
+
+- Servicio siempre encendido en Linux y en Windows con WSL2 (`dixi-tower service install`), con systemd de usuario. Reiniciar el panel no detiene a los agentes. En Windows, una entrada en las aplicaciones de inicio despierta WSL al iniciar sesión, sin ventana, y lo mantiene encendido, así que el panel sigue en `http://localhost:4310/` sin ninguna ventana de Ubuntu abierta.
+- Prueba del servicio con systemd (`tests/servicio.sh`) en la integración continua.
+
+## [0.1.0] — 2026-11-28
 
 Primera versión como proyecto propio. Nació dentro de un repositorio interno de Dixi y se separó para poder liberarlo.
 

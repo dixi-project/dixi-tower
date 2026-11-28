@@ -86,7 +86,7 @@ try:
 except Exception:
     responde = False
 linea(responde, T("Panel", "Panel"), f"http://localhost:{puerto}/" if responde else T("no está corriendo: dixi-tower panel", "not running: dixi-tower panel"), opcional=True)
-if platform.system() == "Darwin":
+if platform.system() in ("Darwin", "Linux"):   # launchd en macOS; systemd de usuario en Linux y WSL
     linea(os.path.isfile(servicio), T("Servicio (siempre encendido)", "Service (always on)"), "" if os.path.isfile(servicio) else T("dixi-tower servicio instalar", "dixi-tower service install"), opcional=True)
 
 print()

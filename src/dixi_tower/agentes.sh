@@ -268,6 +268,157 @@ cmd_eliminar() {
   m eliminado "ag=$ag" "rama=${rama:--}"
 }
 
+# ── Servicio siempre encendido ───────────────────────────────────────────────
+# macOS: LaunchAgent de launchd. Linux y Windows con WSL2: servicio de usuario de
+# systemd; en WSL, además, una entrada de inicio de Windows mantiene viva la
+# distribución (WSL la apaga cuando no queda ninguna ventana abierta).
+UNIDAD="$HOME/.config/systemd/user/dixi-tower.service"
+case "$(uname)" in Darwin) SERVICIO="$PLIST" ;; *) SERVICIO="$UNIDAD" ;; esac
+es_wsl() { [ -n "${WSL_DISTRO_NAME:-}" ] || grep -qi microsoft /proc/version 2>/dev/null; }
+
+servicio_macos() {
+  local dominio="gui/$(id -u)"
+  case "$1" in
+    instalar|install)
+      # El servicio sustituye a la ventana tmux del panel: arranca al iniciar sesión
+      # y launchd lo relanza si se cae.
+      if ventana_viva panel; then tmux kill-window -t "$SESION:panel"; fi
+      mkdir -p "$(dirname "$PLIST")"
+      python3 - "$PLIST" "$ETIQUETA" "$(command -v python3)" "$DIR" "$PUERTO" "$HOME_AG" "$PATH" <<'PYS'
+import plistlib, sys
+ruta, etiqueta, python, carpeta, puerto, home_ag, path = sys.argv[1:]
+with open(ruta, "wb") as fh:
+    plistlib.dump({
+        "Label": etiqueta,
+        "ProgramArguments": [python, f"{carpeta}/panel.py", puerto],
+        "WorkingDirectory": carpeta,
+        "RunAtLoad": True,
+        "KeepAlive": True,
+        "ThrottleInterval": 5,
+        # launchd arranca con un PATH mínimo: se fija el de esta sesión para que
+        # el panel y los agentes que lance encuentren tmux, git, gh y claude.
+        "EnvironmentVariables": {"PATH": path, "DIXI_AGENTES_HOME": home_ag, "DIXI_AGENTES_PUERTO": puerto},
+        "StandardOutPath": f"{home_ag}/panel.log",
+        "StandardErrorPath": f"{home_ag}/panel.log",
+    }, fh)
+PYS
+      launchctl bootout "$dominio/$ETIQUETA" 2>/dev/null || true
+      # Instalaciones hechas antes de que el proyecto se llamara Dixi Tower.
+      launchctl bootout "$dominio/$ETIQUETA_ANTERIOR" 2>/dev/null || true
+      rm -f "$HOME/Library/LaunchAgents/$ETIQUETA_ANTERIOR.plist"
+      launchctl bootstrap "$dominio" "$PLIST"
+      if esperar_panel; then m servicio_instalado "url=http://localhost:$PUERTO/"
+      else m servicio_sin_respuesta "log=$HOME_AG/panel.log" >&2; exit 1; fi
+      ;;
+    quitar|uninstall)
+      launchctl bootout "$dominio/$ETIQUETA" 2>/dev/null || true
+      rm -f "$PLIST"
+      m servicio_quitado
+      ;;
+    reiniciar|restart)
+      launchctl kickstart -k "$dominio/$ETIQUETA"
+      if esperar_panel; then m panel_reiniciado "url=http://localhost:$PUERTO/"; else m panel_no_responde "log=$HOME_AG/panel.log" >&2; exit 1; fi
+      ;;
+    estado|status)
+      if [ -f "$PLIST" ]; then m servicio_si "plist=$PLIST"; else m servicio_no; fi
+      if panel_responde; then m panel_si "url=http://localhost:$PUERTO/"; else m panel_no; fi
+      ;;
+    *) m uso_servicio >&2; exit 1 ;;
+  esac
+}
+
+# Windows con WSL: WSL apaga la distribución cuando no queda ningún proceso de
+# Windows conectado a ella, y con ella el servicio. Una entrada en el registro de
+# inicio del usuario (HKCU\...\Run, visible en «Aplicaciones de inicio» del
+# Administrador de tareas) lanza al iniciar sesión, sin ventana, un proceso que no
+# termina. Se usa conhost --headless y no un .vbs: VBScript va a desaparecer de Windows.
+RUN_WINDOWS='HKCU\Software\Microsoft\Windows\CurrentVersion\Run'
+mantener_wsl() {   # mantener_wsl instalar|quitar
+  if ! command -v reg.exe >/dev/null || ! command -v powershell.exe >/dev/null; then m servicio_wsl_sin_inicio >&2; return 1; fi
+  if [ "$1" = quitar ]; then
+    reg.exe delete "$RUN_WINDOWS" /v "Dixi Tower" /f >/dev/null 2>&1 || true
+    pkill -f '^dixi-tower-wsl' 2>/dev/null || true
+    return 0
+  fi
+  local args="--headless wsl.exe -d \"$WSL_DISTRO_NAME\" --exec bash -c \"exec -a dixi-tower-wsl sleep infinity\""
+  reg.exe add "$RUN_WINDOWS" /v "Dixi Tower" /t REG_SZ /d "conhost.exe $args" /f >/dev/null 2>&1 \
+    || { m servicio_wsl_sin_inicio >&2; return 1; }
+  # Y ahora mismo, para no esperar al próximo inicio de sesión. Start-Process lo
+  # separa de esta terminal: sigue vivo aunque se cierre Ubuntu.
+  pgrep -f '^dixi-tower-wsl' >/dev/null || (cd /mnt/c 2>/dev/null; powershell.exe -NoProfile -Command \
+    "Start-Process conhost.exe -ArgumentList '$(printf %s "$args" | sed "s/'/''/g")'") >/dev/null 2>&1 || true
+}
+
+servicio_linux() {
+  local accion="$1"
+  case "$accion" in instalar|install|quitar|uninstall|reiniciar|restart|estado|status) ;; *) m uso_servicio >&2; exit 1 ;; esac
+  if ! command -v systemctl >/dev/null || [ ! -d /run/systemd/system ] || ! systemctl --user show-environment >/dev/null 2>&1; then
+    case "$accion" in
+      estado|status) m servicio_no; if panel_responde; then m panel_si "url=http://localhost:$PUERTO/"; else m panel_no; fi; return 0 ;;
+    esac
+    if es_wsl; then m servicio_sin_systemd_wsl >&2; else m servicio_sin_systemd >&2; fi
+    exit 1
+  fi
+  case "$accion" in
+    instalar|install)
+      if ventana_viva panel; then tmux kill-window -t "$SESION:panel"; fi
+      mkdir -p "$(dirname "$UNIDAD")"
+      python3 - "$UNIDAD" "$(command -v python3)" "$DIR" "$PUERTO" "$HOME_AG" "$PATH" "$PROYECTOS_DIR" <<'PYS'
+import sys
+ruta, python, carpeta, puerto, home_ag, path, proyectos = sys.argv[1:]
+q = lambda v: '"' + v.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%") + '"'
+with open(ruta, "w") as fh:
+    fh.write(f"""[Unit]
+Description=Dixi Tower panel (http://localhost:{puerto}/)
+
+[Service]
+# WorkingDirectory no admite comillas (toma la línea entera, espacios incluidos).
+ExecStart={q(python)} {q(carpeta + "/panel.py")} {puerto}
+WorkingDirectory={carpeta}
+# systemd arranca con un PATH mínimo: se fija el de esta sesión para que el panel
+# y los agentes que lance encuentren tmux, git, gh y el motor.
+Environment={q("PATH=" + path)} {q("DIXI_AGENTES_HOME=" + home_ag)} {q("DIXI_AGENTES_PUERTO=" + puerto)} {q("DIXI_PROYECTOS_DIR=" + proyectos)}
+Restart=always
+RestartSec=5
+# Los agentes viven en tmux, que el panel arranca: al reiniciar o detener el panel
+# solo se detiene el panel, no los agentes.
+KillMode=process
+StandardOutput=append:{home_ag}/panel.log
+StandardError=append:{home_ag}/panel.log
+
+[Install]
+WantedBy=default.target
+""")
+PYS
+      systemctl --user daemon-reload
+      systemctl --user enable dixi-tower.service >/dev/null 2>&1
+      systemctl --user restart dixi-tower.service
+      if es_wsl; then
+        # Sin «linger», el servicio de usuario no arranca hasta abrir una terminal.
+        loginctl enable-linger "$(id -un)" 2>/dev/null || sudo -n loginctl enable-linger "$(id -un)" 2>/dev/null \
+          || m servicio_linger "u=$(id -un)" >&2
+        mantener_wsl instalar && m servicio_wsl_inicio
+      fi
+      if esperar_panel; then m servicio_instalado "url=http://localhost:$PUERTO/"
+      else m servicio_sin_respuesta "log=$HOME_AG/panel.log" >&2; exit 1; fi
+      ;;
+    quitar|uninstall)
+      systemctl --user disable --now dixi-tower.service >/dev/null 2>&1 || true
+      rm -f "$UNIDAD"; systemctl --user daemon-reload
+      if es_wsl; then mantener_wsl quitar || true; fi
+      m servicio_quitado
+      ;;
+    reiniciar|restart)
+      systemctl --user restart dixi-tower.service
+      if esperar_panel; then m panel_reiniciado "url=http://localhost:$PUERTO/"; else m panel_no_responde "log=$HOME_AG/panel.log" >&2; exit 1; fi
+      ;;
+    estado|status)
+      if [ -f "$UNIDAD" ]; then m servicio_si "plist=$UNIDAD"; else m servicio_no; fi
+      if panel_responde; then m panel_si "url=http://localhost:$PUERTO/"; else m panel_no; fi
+      ;;
+  esac
+}
+
 case "${1:-}" in
   siguiente|next) cmd_siguiente "${2:?proyecto}" ;;
   lanzar|launch) cmd_lanzar "${2:?proyecto}" "${3:?st-id o libre}" "${@:4}" ;;
@@ -277,7 +428,7 @@ case "${1:-}" in
   detener|stop) cmd_detener "${2:?agente}" ;;
   reanudar|resume) cmd_reanudar "${2:?agente}" ;;
   eliminar|delete) cmd_eliminar "${2:?agente}" ;;
-  doctor)    python3 "$DIR/doctor.py" "$PUERTO" "$PLIST" ;;
+  doctor)    python3 "$DIR/doctor.py" "$PUERTO" "$SERVICIO" ;;
   abrir|attach) m attach "s=$SESION" ;;
   panel)
     puerto="${2:-$PUERTO}"
@@ -297,56 +448,10 @@ case "${1:-}" in
     m panel_url "url=http://localhost:$puerto/"
     ;;
   servicio|service)
-    if [ "$(uname)" != "Darwin" ]; then
-      m servicio_solo_macos >&2; exit 1
-    fi
-    dominio="gui/$(id -u)"
-    case "${2:-estado}" in
-      instalar|install)
-        # El servicio sustituye a la ventana tmux del panel: arranca al iniciar sesión
-        # y launchd lo relanza si se cae.
-        if ventana_viva panel; then tmux kill-window -t "$SESION:panel"; fi
-        mkdir -p "$(dirname "$PLIST")"
-        python3 - "$PLIST" "$ETIQUETA" "$(command -v python3)" "$DIR" "$PUERTO" "$HOME_AG" "$PATH" <<'PYS'
-import plistlib, sys
-ruta, etiqueta, python, carpeta, puerto, home_ag, path = sys.argv[1:]
-with open(ruta, "wb") as fh:
-    plistlib.dump({
-        "Label": etiqueta,
-        "ProgramArguments": [python, f"{carpeta}/panel.py", puerto],
-        "WorkingDirectory": carpeta,
-        "RunAtLoad": True,
-        "KeepAlive": True,
-        "ThrottleInterval": 5,
-        # launchd arranca con un PATH mínimo: se fija el de esta sesión para que
-        # el panel y los agentes que lance encuentren tmux, git, gh y claude.
-        "EnvironmentVariables": {"PATH": path, "DIXI_AGENTES_HOME": home_ag, "DIXI_AGENTES_PUERTO": puerto},
-        "StandardOutPath": f"{home_ag}/panel.log",
-        "StandardErrorPath": f"{home_ag}/panel.log",
-    }, fh)
-PYS
-        launchctl bootout "$dominio/$ETIQUETA" 2>/dev/null || true
-        # Instalaciones hechas antes de que el proyecto se llamara Dixi Tower.
-        launchctl bootout "$dominio/$ETIQUETA_ANTERIOR" 2>/dev/null || true
-        rm -f "$HOME/Library/LaunchAgents/$ETIQUETA_ANTERIOR.plist"
-        launchctl bootstrap "$dominio" "$PLIST"
-        if esperar_panel; then m servicio_instalado "url=http://localhost:$PUERTO/"
-        else m servicio_sin_respuesta "log=$HOME_AG/panel.log" >&2; exit 1; fi
-        ;;
-      quitar|uninstall)
-        launchctl bootout "$dominio/$ETIQUETA" 2>/dev/null || true
-        rm -f "$PLIST"
-        m servicio_quitado
-        ;;
-      reiniciar|restart)
-        launchctl kickstart -k "$dominio/$ETIQUETA"
-        if esperar_panel; then m panel_reiniciado "url=http://localhost:$PUERTO/"; else m panel_no_responde "log=$HOME_AG/panel.log" >&2; exit 1; fi
-        ;;
-      estado|status)
-        if [ -f "$PLIST" ]; then m servicio_si "plist=$PLIST"; else m servicio_no; fi
-        if panel_responde; then m panel_si "url=http://localhost:$PUERTO/"; else m panel_no; fi
-        ;;
-      *) m uso_servicio >&2; exit 1 ;;
+    case "$(uname)" in
+      Darwin) servicio_macos "${2:-estado}" ;;
+      Linux) servicio_linux "${2:-estado}" ;;
+      *) m servicio_sin_soporte >&2; exit 1 ;;
     esac
     ;;
   *)
@@ -358,7 +463,7 @@ propio worktree y rama de git. Un proyecto puede tener varios agentes a la vez: 
 primero se llama como el proyecto y los siguientes <proyecto>@2, <proyecto>@3…
 
   dixi-tower panel [puerto]                    panel web (http://localhost:4310/)
-  dixi-tower servicio instalar|quitar|reiniciar|estado   panel siempre encendido (macOS)
+  dixi-tower servicio instalar|quitar|reiniciar|estado   panel siempre encendido (macOS, Linux, WSL)
   dixi-tower doctor                            revisa requisitos e instalación
   dixi-tower lanzar <proyecto> libre --instruccion <archivo> [--motor M] [--autonomia A]
   dixi-tower lanzar <proyecto> <id-de-tarea> [--forzar] [--instruccion <archivo>]
@@ -382,7 +487,7 @@ git worktree and branch. A project can have several agents at once: the first is
 named after the project, the next ones <project>@2, <project>@3…
 
   dixi-tower panel [port]                      web panel (http://localhost:4310/)
-  dixi-tower service install|uninstall|restart|status   keep the panel always on (macOS)
+  dixi-tower service install|uninstall|restart|status   keep the panel always on (macOS, Linux, WSL)
   dixi-tower doctor                            check requirements and installation
   dixi-tower launch <project> free --instruction <file> [--engine E] [--autonomy A]
   dixi-tower launch <project> <task-id> [--force] [--instruction <file>]
