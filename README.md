@@ -59,7 +59,7 @@ dixi-tower service install      # panel always on at http://localhost:4310/ (mac
 dixi-tower panel                # or: run the panel inside tmux (any system)
 ```
 
-Open the panel and click **＋ New agent**. Pick a repository from your projects folder (`~/projects` by default, change it with `DIXI_TOWER_PROJECTS`), type an instruction and launch.
+Open the panel and click **＋ New agent**. Pick a repository from your projects folder (`~/projects` by default; change it in Settings › Projects or with `DIXI_TOWER_PROJECTS`) or give the path of any other one, type an instruction and launch.
 
 > **Step by step, with screenshots:** the [operations manual](https://github.com/dixi-project/dixi-tower/blob/main/docs/manual.md) covers installation, setup and daily use.
 

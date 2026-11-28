@@ -4,6 +4,23 @@
 
 Cambios de Dixi Tower por versión. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [Sin publicar]
+
+### Añadido
+
+- Configuración con pestañas (**Agentes**, **Proyectos** y **Tareas**), accesibles con teclado.
+- La carpeta de proyectos se elige en Configuración › Proyectos (con explorador «Elegir…»), se aplica sin reiniciar el panel y manda sobre `DIXI_TOWER_PROJECTS`. También puede quedar en «ninguna».
+- Lanzar un repositorio de cualquier sitio por su ruta absoluta: desde el panel («Otro repositorio (ruta)…») y desde la terminal (`dixi-tower launch /ruta/al/repo …`). La ruta se valida en el servidor.
+- La dirección del tablero de tareas se edita en Configuración › Tareas.
+- Pruebas de lo anterior (`tests/configuracion.sh`) en la integración continua.
+
+### Cambiado
+
+- Guardar la configuración global conserva las claves que el panel no gestiona (motores propios, tablero, carpeta y cualquier otra).
+- `dixi-tower doctor` dice de dónde sale la carpeta de proyectos.
+- `dixi-tower next` imprime su salida de una vez.
+- Las capturas de Configuración y de Nuevo agente de los manuales quedan desactualizadas.
+
 ## [0.2.0] — 2026-11-28
 
 ### Añadido

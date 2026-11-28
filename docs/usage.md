@@ -30,6 +30,7 @@ From the terminal:
 dixi-tower next <project>                          # pending board tasks
 dixi-tower launch <project> <task-id> [--force]    # with a board task
 dixi-tower launch <project> free --instruction <file> [--engine E] [--autonomy A]
+dixi-tower launch /path/to/repo free --instruction <file>   # a repository from anywhere (absolute path of its root)
 dixi-tower status
 dixi-tower show <agent> | say <agent> "<msg>" | stop <agent>
 dixi-tower resume <agent>                          # turn a stopped agent back on, resuming its conversation
@@ -39,7 +40,7 @@ tmux attach -t dixi-tower                          # live consoles
 
 ## Settings
 
-Changed from the panel: **Settings** in the sidebar (values every new agent starts with, stored in `~/.dixi-tower/config.json`) and **Settings** on each agent's card (its own copy, stored in its state file).
+Changed from the panel: **Settings** in the sidebar (values every new agent starts with, stored in `~/.dixi-tower/config.json`; it has three tabs, **Agents**, **Projects** and **Tasks**) and **Settings** on each agent's card (its own copy, stored in its state file).
 
 | Setting | Options | When it applies |
 |---|---|---|
@@ -47,6 +48,8 @@ Changed from the panel: **Settings** in the sidebar (values every new agent star
 | Autonomy | `supervisada` (supervised), `equilibrada` (balanced), `autonoma` (autonomous) | When the agent is turned on |
 | Subagents | allowed or not, and maximum open at a time (1 to 20) | Claude: immediately. Codex: when turned on |
 | Weekly and 5-hour session usage limit | percentage of the account; 0 = no limit | Claude: immediately. Codex: shown, not enforced |
+| Projects folder (Projects tab, key `carpeta_proyectos`) | the default (environment variable or `~/projects`), a folder, or none (each repository's path is asked for) | Immediately, no panel restart. Wins over the environment variable |
+| In-review task limit and board address (Tasks tab, keys `tope_revision` and `tablero`) | number (0 = no limit) and an optional `http(s)://` URL | At launch; the link, on reload |
 
 How autonomy maps to each engine:
 
@@ -82,7 +85,7 @@ What to expect with Codex:
 | Piece | What it does |
 |---|---|
 | `dixi-tower` | Creates the worktree and the branch, builds the prompt and opens the agent in a window of the `dixi-tower` tmux session |
-| `~/.dixi-tower/proyectos.json` | Project registry (repository, base branch and workflow command). A repository in the projects folder is registered the first time it is launched (`registro.py`) |
+| `~/.dixi-tower/proyectos.json` | Project registry (repository, base branch and workflow command). A repository in the projects folder, or one launched by absolute path, is registered the first time it is launched (`registro.py`); the key of a path-launched one is its sanitized folder name (`-2`, `-3`… if another repository already uses it) |
 | `worker-settings.json` | Permissions and hooks injected into the agent with `--settings`, without touching the project repository |
 | `worker-prompt.md` | Agent rules: one task, ends in a pull request, never merges or deploys |
 | `hooks/estado-hook.py` | Writes `~/.dixi-tower/estado/<agent>.json` on every event and notifies you when the agent stops |
@@ -149,7 +152,7 @@ If a project has a `tasks/TASKS.md` in the [sys_task](https://task.dixi-project.
 - The **New agent** form offers the pending tasks, by priority.
 - The branch is named `st/<id>-<summary>`, the convention sys_task uses to move the card.
 - You can set an **in-review task limit** per project in Settings: with more tasks in `[r]` than the limit, no new agent is launched unless forced. It is 0 (off) by default.
-- To keep your board one click away, add its address to `config.json` in the data folder: `"tablero": "https://tasks.example.com/"`. The panel then shows an “Open the task board” link; without that key there is no link.
+- To keep your board one click away, type its address in **Settings › Tasks** (stored as `"tablero": "https://tasks.example.com/"` in `config.json`). The panel then shows an “Open the task board” link; empty, there is no link.
 
 ## Slash commands in the panel
 
@@ -177,7 +180,7 @@ The former names (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) are still accepted.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DIXI_TOWER_PROJECTS` | `~/projects` | Folder whose repositories can be launched |
+| `DIXI_TOWER_PROJECTS` | `~/projects` | Folder whose repositories can be launched. Only used when no folder is set in Settings › Projects |
 | `DIXI_TOWER_HOME` | `~/.dixi-tower` | Data folder: state, settings, startup scripts and worktrees. If only `~/.agentes` exists (earlier installations), that one is used |
 | `DIXI_TOWER_PORT` | `4310` | Panel port |
 | `DIXI_TOWER_NOTIFY` | `1` | `0` turns notifications off |
@@ -186,7 +189,7 @@ The former names (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) are still accepted.
 
 ## Panel security
 
-The panel listens on `127.0.0.1` only, rejects requests whose `Host` header is not local, and requires a token for every action that writes (sending text or keys, stopping, launching, saving attachments). The token is stored in the data folder, readable only by you. Anyone who can open the panel can give instructions to your agents: do not expose it through a tunnel or proxy.
+The panel listens on `127.0.0.1` only, rejects requests whose `Host` header is not local, and requires a token for every action that writes (sending text or keys, stopping, launching, saving attachments). The token is stored in the data folder, readable only by you. Launching by path validates the path on the server: absolute, no control characters, the root of a git repository (with `.git`) and outside the data folder; the panel calls the launcher without a shell. Anyone who can open the panel can give instructions to your agents: do not expose it through a tunnel or proxy.
 
 ## Links
 

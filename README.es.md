@@ -59,7 +59,7 @@ dixi-tower servicio instalar    # panel siempre encendido en http://localhost:43
 dixi-tower panel                # o bien: el panel dentro de tmux (cualquier sistema)
 ```
 
-Abre el panel y pulsa **＋ Nuevo agente**. Elige un repositorio de tu carpeta de proyectos (`~/projects` por defecto; se cambia con `DIXI_TOWER_PROJECTS`), escribe una instrucción y lánzalo.
+Abre el panel y pulsa **＋ Nuevo agente**. Elige un repositorio de tu carpeta de proyectos (`~/projects` por defecto; se cambia en Configuración › Proyectos o con `DIXI_TOWER_PROJECTS`) o indica la ruta de cualquier otro, escribe una instrucción y lánzalo.
 
 > **Paso a paso, con capturas:** el [manual de operación](docs/manual.es.md) cubre la instalación, la configuración y el uso diario.
 
