@@ -372,8 +372,9 @@ with open(ruta, "w") as fh:
 Description=Dixi Tower panel (http://localhost:{puerto}/)
 
 [Service]
+# WorkingDirectory no admite comillas (toma la línea entera, espacios incluidos).
 ExecStart={q(python)} {q(carpeta + "/panel.py")} {puerto}
-WorkingDirectory={q(carpeta)}
+WorkingDirectory={carpeta}
 # systemd arranca con un PATH mínimo: se fija el de esta sesión para que el panel
 # y los agentes que lance encuentren tmux, git, gh y el motor.
 Environment={q("PATH=" + path)} {q("DIXI_AGENTES_HOME=" + home_ag)} {q("DIXI_AGENTES_PUERTO=" + puerto)} {q("DIXI_PROYECTOS_DIR=" + proyectos)}

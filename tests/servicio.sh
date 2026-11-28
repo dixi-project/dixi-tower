@@ -43,7 +43,7 @@ debe "el panel del servicio usa las carpetas indicadas" "[ -f '$DIXI_TOWER_HOME/
 debe "se lanza un agente" "'$DT' launch demo free --instruction '$T/encargo.txt' && tmux list-windows -t '=dixi-tower' -F '#W' | grep -qx demo"
 debe "reiniciar el servicio no mata a los agentes" "'$DT' service restart && responde && tmux list-windows -t '=dixi-tower' -F '#W' | grep -qx demo"
 PID=$(systemctl --user show -p MainPID --value dixi-tower.service)
-debe "si el panel se cae, systemd lo levanta" "kill $PID && sleep 1 && espera responde && [ \"\$(systemctl --user show -p MainPID --value dixi-tower.service)\" != '$PID' ]"
+debe "si el panel se cae, systemd lo levanta" "[ \"\${PID:-0}\" -gt 0 ] && kill $PID && sleep 1 && espera responde && [ \"\$(systemctl --user show -p MainPID --value dixi-tower.service)\" != '$PID' ]"
 debe "quitar lo detiene y borra la unidad" "'$DT' service uninstall && [ ! -f '$U' ] && ! responde"
 debe "sin systemd explica qué hacer" "(env -i HOME='$HOME' PATH=/usr/bin:/bin LANG=es_MX.UTF-8 XDG_RUNTIME_DIR=/nonexistent DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent '$DT' service install 2>&1; true) | grep -q 'systemd'"
 
