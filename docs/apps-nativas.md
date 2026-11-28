@@ -4,7 +4,7 @@
 
 Que Dixi Tower se instale y se use como una app, no solo como un comando y una pestaña del navegador. En el escritorio, la app levanta la torre y la muestra; en el móvil, controla una torre que ya corre en un ordenador.
 
-Windows queda fuera: se sigue usando con WSL2, como dice el manual.
+Windows no tendrá app nativa, pero **Dixi Tower sí corre en Windows**: con WSL2, igual que en macOS y Linux, con el panel siempre encendido en el navegador (ver el manual y el servicio de WSL2). Lo que queda fuera es solo la app.
 
 Estado: **sin empezar**. Hay cuenta de Apple Developer para firmar y publicar.
 
