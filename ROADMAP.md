@@ -42,7 +42,7 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 ### 5. Sistemas
 
 - [x] Linux probado en Debian 12 (`tests/linux.sh`): panel, agentes, instalación con pip y avisos con `notify-send`.
-- [ ] Linux: servicio siempre encendido con systemd (hoy, `dixi-tower panel`).
+- [x] Linux y Windows (WSL2): servicio siempre encendido con systemd de usuario (`tests/servicio.sh` en la CI); en Windows, un lanzador en la carpeta de Inicio despierta WSL al iniciar sesión.
 - [x] Windows vía WSL2: documentado en el manual, `doctor` lo reconoce y avisa si los proyectos están en el disco de Windows, y los avisos usan las notificaciones de Windows.
 - [x] Windows vía WSL2 probado en Windows Server 2025 con Ubuntu (`tests/windows/`): instalación, `doctor`, panel en Edge, agente con Claude Code y avisos de Windows que abren el agente.
 - [ ] Windows nativo, sin WSL: solo si hay demanda. Exige manejar las terminales sin tmux (ConPTY) y pasar el lanzador de bash a Python.

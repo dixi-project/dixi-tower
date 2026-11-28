@@ -19,7 +19,7 @@ Dixi Tower is a local control tower for coding agents. It launches coding-agent 
 
 It runs on the subscription you already have: no API keys, no cloud service, nothing leaves your machine except what the agents themselves do.
 
-> **Status: alpha.** Tested on macOS with Claude Code and Codex, and on Linux (Debian 12). On Windows it runs inside WSL2, tested on Windows Server 2025 with Ubuntu. On Linux and Windows run the panel with `dixi-tower panel`; the always-on service is macOS only. See the [roadmap](https://github.com/dixi-project/dixi-tower/blob/main/ROADMAP.md).
+> **Status: alpha.** Tested on macOS with Claude Code and Codex, and on Linux (Debian 12). On Windows it runs inside WSL2, tested on Windows Server 2025 with Ubuntu. The always-on service works on all three (launchd on macOS, systemd on Linux and WSL2). See the [roadmap](https://github.com/dixi-project/dixi-tower/blob/main/ROADMAP.md).
 
 ## What you get
 
@@ -55,7 +55,7 @@ Then:
 
 ```sh
 dixi-tower doctor               # check requirements
-dixi-tower service install      # panel always on at http://localhost:4310/ (macOS)
+dixi-tower service install      # panel always on at http://localhost:4310/ (macOS, Linux, WSL2)
 dixi-tower panel                # or: run the panel inside tmux (any system)
 ```
 

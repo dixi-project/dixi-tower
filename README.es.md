@@ -19,7 +19,7 @@ Dixi Tower es una torre de control local para agentes de código. Lanza sesiones
 
 Funciona con la suscripción que ya tienes: sin llaves de API, sin servicio en la nube, y nada sale de tu máquina salvo lo que hagan los propios agentes.
 
-> **Estado: alfa.** Probado en macOS con Claude Code y Codex, y en Linux (Debian 12). En Windows corre dentro de WSL2, probado en Windows Server 2025 con Ubuntu. En Linux y Windows el panel se levanta con `dixi-tower panel`; el servicio siempre encendido es solo de macOS. Ver la [hoja de ruta](ROADMAP.md).
+> **Estado: alfa.** Probado en macOS con Claude Code y Codex, y en Linux (Debian 12). En Windows corre dentro de WSL2, probado en Windows Server 2025 con Ubuntu. El servicio siempre encendido funciona en los tres (launchd en macOS, systemd en Linux y WSL2). Ver la [hoja de ruta](ROADMAP.md).
 
 ## Qué ofrece
 
@@ -55,7 +55,7 @@ Después:
 
 ```sh
 dixi-tower doctor               # revisa requisitos
-dixi-tower servicio instalar    # panel siempre encendido en http://localhost:4310/ (macOS)
+dixi-tower servicio instalar    # panel siempre encendido en http://localhost:4310/ (macOS, Linux, WSL2)
 dixi-tower panel                # o bien: el panel dentro de tmux (cualquier sistema)
 ```
 

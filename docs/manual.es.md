@@ -87,9 +87,11 @@ Dixi Tower funciona en Windows dentro de WSL2, el Linux que viene con Windows 10
    ```
 3. Instala tu motor (Claude Code o Codex) **dentro de Ubuntu**, con sus instrucciones para Linux, e inicia sesión ahí. Un motor instalado del lado de Windows no cuenta.
 4. Guarda tus repositorios **dentro de Linux**, en `~/projects`. Clónalos ahí en lugar de usar `C:\` (`/mnt/c/…`), donde git va muy lento; `dixi-tower doctor` te avisa si están en el disco de Windows.
-5. Instala Dixi Tower con `pipx install dixi-tower`, levántalo con `dixi-tower panel` y abre **http://localhost:4310/** en tu navegador de Windows.
+5. Instala Dixi Tower con `pipx install dixi-tower`, déjalo siempre encendido con `dixi-tower servicio instalar` y abre **http://localhost:4310/** en tu navegador de Windows. Edge y Chrome pueden instalar el panel como app (**⋯ → Aplicaciones → Instalar este sitio como aplicación**) para tener su ícono en el menú Inicio y la barra de tareas.
 
-Los avisos usan las notificaciones propias de Windows a través de PowerShell, sin instalar nada más. No hay servicio siempre encendido: después de reiniciar Windows o de ejecutar `wsl --shutdown`, vuelve a levantar el panel con `dixi-tower panel`.
+El servicio necesita systemd en WSL, que las imágenes recientes de Ubuntu traen activado. Si `servicio instalar` dice que no lo está, añade `[boot]` y `systemd=true` a `/etc/wsl.conf`, ejecuta `wsl --shutdown` en PowerShell, abre Ubuntu de nuevo y repite. El servicio deja además `Dixi Tower.vbs` en tu carpeta de Inicio de Windows: al iniciar sesión en Windows despierta WSL en segundo plano y lo mantiene encendido, así que el panel está ahí aunque no tengas ninguna ventana de Ubuntu abierta. `dixi-tower servicio quitar` quita las dos cosas.
+
+Los avisos usan las notificaciones propias de Windows a través de PowerShell, sin instalar nada más.
 
 **Tu carpeta de proyectos.** Dixi Tower ofrece los repositorios git que hay dentro de `~/projects`. Si los tuyos están en otro lugar, define `DIXI_TOWER_PROJECTS` (por ejemplo en tu `~/.zshrc`) antes de levantar el panel:
 
@@ -100,7 +102,7 @@ export DIXI_TOWER_PROJECTS="$HOME/code"
 ## 2. Levantar el panel
 
 ```sh
-dixi-tower servicio instalar   # macOS: siempre encendido, arranca con tu sesión
+dixi-tower servicio instalar   # siempre encendido, arranca con tu sesión (macOS, Linux, WSL2)
 dixi-tower panel               # cualquier sistema: el panel dentro de tmux
 ```
 
