@@ -270,8 +270,8 @@ cmd_eliminar() {
 
 # ── Servicio siempre encendido ───────────────────────────────────────────────
 # macOS: LaunchAgent de launchd. Linux y Windows con WSL2: servicio de usuario de
-# systemd; en WSL, además, un lanzador en la carpeta de Inicio de Windows mantiene
-# viva la distribución (WSL la apaga cuando no queda ninguna ventana abierta).
+# systemd; en WSL, además, una entrada de inicio de Windows mantiene viva la
+# distribución (WSL la apaga cuando no queda ninguna ventana abierta).
 UNIDAD="$HOME/.config/systemd/user/dixi-tower.service"
 case "$(uname)" in Darwin) SERVICIO="$PLIST" ;; *) SERVICIO="$UNIDAD" ;; esac
 es_wsl() { [ -n "${WSL_DISTRO_NAME:-}" ] || grep -qi microsoft /proc/version 2>/dev/null; }
@@ -327,26 +327,26 @@ PYS
   esac
 }
 
-# Carpeta de Inicio de Windows y lanzador que despierta WSL al iniciar sesión.
-inicio_windows() {
-  local w; w="$(powershell.exe -NoProfile -Command '[Environment]::GetFolderPath("Startup")' 2>/dev/null | tr -d '\r')"
-  [ -n "$w" ] && wslpath -u "$w"
-}
-LANZADOR_WSL="Dixi Tower.vbs"
+# Windows con WSL: WSL apaga la distribución cuando no queda ningún proceso de
+# Windows conectado a ella, y con ella el servicio. Una entrada en el registro de
+# inicio del usuario (HKCU\...\Run, visible en «Aplicaciones de inicio» del
+# Administrador de tareas) lanza al iniciar sesión, sin ventana, un proceso que no
+# termina. Se usa conhost --headless y no un .vbs: VBScript va a desaparecer de Windows.
+RUN_WINDOWS='HKCU\Software\Microsoft\Windows\CurrentVersion\Run'
 mantener_wsl() {   # mantener_wsl instalar|quitar
-  local carpeta; carpeta="$(inicio_windows)" || true
-  if [ -z "$carpeta" ] || [ ! -d "$carpeta" ]; then m servicio_wsl_sin_inicio >&2; return 1; fi
-  local vbs="$carpeta/$LANZADOR_WSL"
+  if ! command -v reg.exe >/dev/null || ! command -v powershell.exe >/dev/null; then m servicio_wsl_sin_inicio >&2; return 1; fi
   if [ "$1" = quitar ]; then
-    rm -f "$vbs"; pkill -f '^dixi-tower-wsl' 2>/dev/null || true; return 0
+    reg.exe delete "$RUN_WINDOWS" /v "Dixi Tower" /f >/dev/null 2>&1 || true
+    pkill -f '^dixi-tower-wsl' 2>/dev/null || true
+    return 0
   fi
-  # Un proceso que no termina (sleep con otro nombre, para poder quitarlo) mantiene
-  # viva la distribución; la ventana se abre oculta (el 0 de Run). El .vbs va en
-  # ASCII porque wscript no lo lee como UTF-8.
-  printf '%s\r\n' \
-    "' Dixi Tower: keeps the WSL distribution $WSL_DISTRO_NAME running so the panel stays at http://localhost:$PUERTO/" \
-    "CreateObject(\"WScript.Shell\").Run \"wsl.exe -d \"\"$WSL_DISTRO_NAME\"\" --exec bash -c \"\"exec -a dixi-tower-wsl sleep infinity\"\"\", 0, False" > "$vbs"
-  pgrep -f '^dixi-tower-wsl' >/dev/null || (cd /mnt/c 2>/dev/null; wscript.exe "$(wslpath -w "$vbs")") >/dev/null 2>&1 || true
+  local args="--headless wsl.exe -d \"$WSL_DISTRO_NAME\" --exec bash -c \"exec -a dixi-tower-wsl sleep infinity\""
+  reg.exe add "$RUN_WINDOWS" /v "Dixi Tower" /t REG_SZ /d "conhost.exe $args" /f >/dev/null 2>&1 \
+    || { m servicio_wsl_sin_inicio >&2; return 1; }
+  # Y ahora mismo, para no esperar al próximo inicio de sesión. Start-Process lo
+  # separa de esta terminal: sigue vivo aunque se cierre Ubuntu.
+  pgrep -f '^dixi-tower-wsl' >/dev/null || (cd /mnt/c 2>/dev/null; powershell.exe -NoProfile -Command \
+    "Start-Process conhost.exe -ArgumentList '$(printf %s "$args" | sed "s/'/''/g")'") >/dev/null 2>&1 || true
 }
 
 servicio_linux() {

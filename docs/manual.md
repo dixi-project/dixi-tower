@@ -89,7 +89,7 @@ Dixi Tower runs on Windows inside WSL2, the Linux that ships with Windows 10 and
 4. Keep your repositories **inside Linux**, in `~/projects`. Clone them there rather than using `C:\` (`/mnt/c/…`), where git is very slow; `dixi-tower doctor` warns you if they are on the Windows drive.
 5. Install Dixi Tower with `pipx install dixi-tower`, keep it always on with `dixi-tower service install` and open **http://localhost:4310/** in your Windows browser. Edge and Chrome can install the panel as an app (**⋯ → Apps → Install this site as an app**) for a Start menu and taskbar icon.
 
-The service needs systemd in WSL, which recent Ubuntu images have on by default. If `service install` says it is off, add `[boot]` and `systemd=true` to `/etc/wsl.conf`, run `wsl --shutdown` in PowerShell, open Ubuntu again and repeat. The service also leaves `Dixi Tower.vbs` in your Windows Startup folder: when you sign in to Windows it wakes WSL in the background and keeps it running, so the panel is there even with no Ubuntu window open. `dixi-tower service uninstall` removes both.
+The service needs systemd in WSL, which recent Ubuntu images have on by default. If `service install` says it is off, add `[boot]` and `systemd=true` to `/etc/wsl.conf`, run `wsl --shutdown` in PowerShell, open Ubuntu again and repeat. The service also adds **Dixi Tower** to your Windows startup apps: when you sign in to Windows it wakes WSL in the background, with no window, and keeps it running, so the panel is there even with no Ubuntu window open. You can see or disable it in **Task Manager → Startup apps**; `dixi-tower service uninstall` removes both.
 
 Notifications use Windows' own notifications through PowerShell, with nothing extra to install.
 
