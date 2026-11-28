@@ -38,6 +38,8 @@ jobs:
         run: tests/smoke.sh
       - name: Pruebas de la configuración (carpeta de proyectos, tablero y lanzar por ruta)
         run: tests/configuracion.sh
+      - name: Carpeta de proyectos por defecto y aviso de primera vez
+        run: tests/aviso-carpeta.sh
       - name: Construir el paquete
         run: uv build
       - name: Prueba de humo contra el wheel instalado
