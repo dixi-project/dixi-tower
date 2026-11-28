@@ -1,0 +1,51 @@
+# Integración continua: prueba de humo en Ubuntu y macOS, desde el repositorio y
+# contra el wheel instalado, y prueba en Debian con Docker (tests/linux.sh).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  humo:
+    name: Prueba de humo (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Instalar tmux
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then brew install tmux; else sudo apt-get update -qq && sudo apt-get install -y -qq tmux; fi
+          tmux -V
+      - name: Identidad de git para los repositorios de prueba
+        run: |
+          git config --global user.name "Dixi Tower CI"
+          git config --global user.email "ci@example.com"
+          git config --global init.defaultBranch main
+      - uses: astral-sh/setup-uv@v10.4.0   # setup-uv ya no publica etiquetas móviles (v10): hay que fijar la versión
+      - name: Prueba de humo desde el repositorio
+        run: tests/smoke.sh
+      - name: Construir el paquete
+        run: uv build
+      - name: Prueba de humo contra el wheel instalado
+        run: tests/wheel.sh
+
+  linux:
+    name: Debian 12 con Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: tests/linux.sh
+        run: tests/linux.sh

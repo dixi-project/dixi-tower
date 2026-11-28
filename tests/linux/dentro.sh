@@ -2,6 +2,7 @@
 # Se ejecuta DENTRO del contenedor que abre tests/linux.sh. El repositorio llega en
 # solo lectura en /src; todo lo que se escribe queda en el contenedor, que se borra al salir.
 set -uo pipefail
+fallos=0   # sale con 1 si falla alguna de las dos pruebas de humo, para la integración continua
 export DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8
 echo "══ Preparando Debian"
 apt-get update -qq >/dev/null && apt-get install -y -qq --no-install-recommends tmux git python3 python3-venv curl ca-certificates procps >/dev/null 2>&1 \
@@ -10,12 +11,12 @@ git config --global user.name prueba; git config --global user.email prueba@exam
 cp -R /src /tmp/dixi-tower && rm -rf /tmp/dixi-tower/.git /tmp/dixi-tower/build /tmp/dixi-tower/src/*.egg-info
 find /tmp/dixi-tower -name __pycache__ -prune -exec rm -rf {} +
 echo; echo "══ 1. Prueba de humo desde el repositorio"
-/tmp/dixi-tower/tests/smoke.sh 2>&1 | grep -v "^  ok"
+/tmp/dixi-tower/tests/smoke.sh 2>&1 | grep -v "^  ok"; [ "${PIPESTATUS[0]}" -eq 0 ] || fallos=1
 echo; echo "══ 2. Instalación con pip en un entorno virtual"
 python3 -m venv /tmp/v && /tmp/v/bin/pip install -q /tmp/dixi-tower 2>&1 | tail -2
 PKG="$(ls -d /tmp/v/lib/python*/site-packages/dixi_tower)"
 /tmp/v/bin/dixi-tower --version
-DIXI_TOWER_BIN=/tmp/v/bin/dixi-tower DIXI_TOWER_SRC="$PKG" /tmp/dixi-tower/tests/smoke.sh 2>&1 | grep -v "^  ok"
+DIXI_TOWER_BIN=/tmp/v/bin/dixi-tower DIXI_TOWER_SRC="$PKG" /tmp/dixi-tower/tests/smoke.sh 2>&1 | grep -v "^  ok"; [ "${PIPESTATUS[0]}" -eq 0 ] || fallos=1
 echo; echo "══ 3. Lo propio de Linux"
 D=/tmp/v/bin/dixi-tower
 echo "-- doctor:"; $D doctor | sed 's/^/   /'
@@ -33,3 +34,4 @@ PATH="/tmp/bin:$PATH" $D launch demo free --instruction /tmp/i.txt 2>&1 | grep -
 sleep 2; curl -s http://127.0.0.1:4310/en/lista | grep -o 'class="n">[^<]*' | sed 's/class="n">/   en la lista: /'
 echo "-- aviso al terminar un turno (en Linux no hay terminal-notifier ni osascript):"
 printf '{"hook_event_name":"Stop","last_assistant_message":"listo"}' | DIXI_AGENTE_PROYECTO=demo DIXI_AGENTE_ID=demo DIXI_AGENTES_HOME="$HOME/.dixi-tower" python3 "$PKG/hooks/estado-hook.py"; echo "   salida del hook: $? · estado: $(python3 -c "import json,os; print(json.load(open(os.path.expanduser('~/.dixi-tower/estado/demo.json')))['estado'])")"
+exit "$fallos"
