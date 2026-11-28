@@ -20,7 +20,7 @@ export PATH="$T/bin:$PATH"
 fallos=0
 ok()   { echo "  ok   $1"; }
 mal()  { echo "  FAIL $1"; fallos=$((fallos + 1)); }
-debe() { if eval "$2" >/dev/null 2>&1; then ok "$1"; else mal "$1"; fi; }
+debe() { echo "  ...  $1"; if eval "$2" >/dev/null 2>&1; then ok "$1"; else mal "$1"; fi; }
 responde() { curl -s -o /dev/null -m 2 "http://127.0.0.1:$P/en/lista"; }
 espera() { local i; for i in $(seq 1 40); do eval "$1" >/dev/null 2>&1 && return 0; sleep 0.5; done; return 1; }
 limpiar() { "$DT" service uninstall >/dev/null 2>&1; tmux kill-server 2>/dev/null; rm -rf "$T"; }

@@ -57,7 +57,12 @@ jobs:
           echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
           echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
       - name: tests/servicio.sh
-        run: tests/servicio.sh
+        run: timeout -k 10 300 tests/servicio.sh
+      - name: Registro del panel y del servicio
+        if: always()
+        run: |
+          systemctl --user status dixi-tower.service --no-pager || true
+          journalctl --user -u dixi-tower.service --no-pager -n 50 || true
 
   linux:
     name: Debian 12 con Docker
