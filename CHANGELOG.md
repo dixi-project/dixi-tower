@@ -4,7 +4,7 @@
 
 Cambios de Dixi Tower por versión. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
-## [Sin publicar]
+## [0.2.0] — 2026-11-28
 
 ### Añadido
 
