@@ -36,6 +36,8 @@ jobs:
       - uses: astral-sh/setup-uv@v10.4.0   # setup-uv ya no publica etiquetas móviles (v10): hay que fijar la versión
       - name: Prueba de humo desde el repositorio
         run: tests/smoke.sh
+      - name: Pruebas de la configuración (carpeta de proyectos, tablero y lanzar por ruta)
+        run: tests/configuracion.sh
       - name: Construir el paquete
         run: uv build
       - name: Prueba de humo contra el wheel instalado
