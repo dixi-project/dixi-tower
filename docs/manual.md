@@ -93,11 +93,13 @@ The service needs systemd in WSL, which recent Ubuntu images have on by default.
 
 Notifications use Windows' own notifications through PowerShell, with nothing extra to install.
 
-**Your projects folder.** Dixi Tower offers the git repositories inside `~/projects`. If yours live elsewhere, set `DIXI_TOWER_PROJECTS` (for example in your `~/.zshrc`) before starting the panel:
+**Your projects folder.** Dixi Tower offers the git repositories inside a projects folder. Change it from the panel, in **Settings › Projects** (section 3): type the path or press **Choose…**. It applies when you save, with no restart. If you do not set it there, the `DIXI_TOWER_PROJECTS` variable is used (for example in your `~/.zshrc`, before starting the panel) and, if that is not set either, `~/projects`:
 
 ```sh
 export DIXI_TOWER_PROJECTS="$HOME/code"
 ```
+
+What you set in Settings wins, then the variable, then `~/projects`. You can also launch a repository that lives anywhere else, with no projects folder at all (section 4).
 
 ## 2. Start the panel
 
@@ -114,9 +116,13 @@ The left column is your list of agents; the right side shows the selected agent.
 
 ## 3. Set your defaults
 
-**Settings** in the left column sets the values every new agent starts with.
+**Settings** in the left column sets the values every new agent starts with. It has three tabs (move between them with the arrow keys): **Agents**, **Projects** and **Tasks**.
 
 ![Tower settings](img/en-settings.jpg)
+
+> The Settings and New agent screenshots in this manual predate the tabs and the “Another repository (path)…” field; they will be updated.
+
+**Agents**
 
 | Setting | What it decides |
 |---|---|
@@ -124,7 +130,21 @@ The left column is your list of agents; the right side shows the selected agent.
 | **Autonomy** | **Supervised** asks before editing and before commands outside its list. **Balanced** edits without asking and checks in for other commands. **Autonomous** asks as little as possible |
 | **Subagents** | Whether the agent may open helpers, and how many at once |
 | **Usage limits** | Percentage of your account's weekly and 5-hour usage at which agents stop and tell you. 0 means no limit |
+
+**Projects**
+
+| Option | What it decides |
+|---|---|
+| **Use the default** | The `DIXI_TOWER_PROJECTS` variable or, if it is not set, `~/projects`. The tab tells you which one it is and where it comes from |
+| **This folder** | The path you type or pick with **Choose…** (browsing is limited to your home folder; a path outside it can be typed by hand) |
+| **None** | No projects folder: every agent you launch asks for the repository path |
+
+**Tasks**
+
+| Setting | What it decides |
+|---|---|
 | **In-review task limit** | Only for projects with a task list (see section 4) |
+| **Address of your task board** | Optional, with `http://` or `https://`. If you set it, the panel shows a link to the board at the bottom left; empty, it disappears |
 
 At every level, an agent never merges, deploys, pushes to the base branch or reads secrets: it ends in a pull request.
 
@@ -138,7 +158,7 @@ Press **＋ New agent**.
 
 ![New agent](img/en-new-agent.png)
 
-1. **Project**: pick a repository from your projects folder.
+1. **Project**: pick a repository from your projects folder. If yours is elsewhere, choose **Another repository (path)…**, type the absolute path of its root (the folder that contains `.git`) or press **Choose…**. If you chose **None** in Settings › Projects, the form asks only for the path.
 2. **Instruction**: what you want done, in your own words.
 3. **Engine** and **Autonomy**: they start with your defaults; change them for this agent if you like.
 4. **Launch agent**.
@@ -241,6 +261,7 @@ Its branch is in your repository (`git branch --list 'agente/*' 'st/*'`), ready 
 
 | What you see | What to do |
 |---|---|
+| I do not see my projects when launching an agent | Check **Settings › Projects**: the folder must exist and have git repositories directly inside it. `dixi-tower doctor` tells you which folder is used and where it comes from. If yours is elsewhere, use **Another repository (path)…** |
 | The panel does not open | `dixi-tower service status`. If it is not responding, `dixi-tower service restart` and check `~/.dixi-tower/panel.log` |
 | "Lost connection to the dashboard" | It retries on its own; press **Retry now** to try at once. If it does not come back, start it again (`dixi-tower service restart` or `dixi-tower panel`) |
 | An agent stays in **Launching** | Look at its console: the engine may be asking you something, or may not be signed in. Sign in with `claude` or `codex` in a terminal |

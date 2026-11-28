@@ -93,11 +93,13 @@ El servicio necesita systemd en WSL, que las imágenes recientes de Ubuntu traen
 
 Los avisos usan las notificaciones propias de Windows a través de PowerShell, sin instalar nada más.
 
-**Tu carpeta de proyectos.** Dixi Tower ofrece los repositorios git que hay dentro de `~/projects`. Si los tuyos están en otro lugar, define `DIXI_TOWER_PROJECTS` (por ejemplo en tu `~/.zshrc`) antes de levantar el panel:
+**Tu carpeta de proyectos.** Dixi Tower ofrece los repositorios git que hay dentro de una carpeta de proyectos. Cámbiala desde el panel, en **Configuración › Proyectos** (sección 3): escribe la ruta o pulsa **Elegir…**. Se aplica al guardar, sin reiniciar. Si no la fijas allí, se usa la variable `DIXI_TOWER_PROJECTS` (por ejemplo en tu `~/.zshrc`, antes de levantar el panel) y, si tampoco existe, `~/projects`:
 
 ```sh
 export DIXI_TOWER_PROJECTS="$HOME/code"
 ```
+
+Manda lo que fijes en Configuración, luego la variable y al final `~/projects`. También puedes lanzar un repositorio que esté en cualquier otro sitio, sin carpeta de proyectos (sección 4).
 
 ## 2. Levantar el panel
 
@@ -112,9 +114,13 @@ La columna izquierda es tu lista de agentes; a la derecha está el agente elegid
 
 ## 3. Fijar tus valores de partida
 
-**Configuración**, en la columna izquierda, fija los valores con los que nace cada agente nuevo.
+**Configuración**, en la columna izquierda, fija los valores con los que nace cada agente nuevo. Tiene tres pestañas (se recorren con las flechas del teclado): **Agentes**, **Proyectos** y **Tareas**.
 
 ![Configuración de la torre](img/es-settings.jpg)
+
+> Las capturas de Configuración y de Nuevo agente de este manual son anteriores a las pestañas y al campo «Otro repositorio (ruta)…»; se actualizarán.
+
+**Agentes**
 
 | Ajuste | Qué decide |
 |---|---|
@@ -122,7 +128,21 @@ La columna izquierda es tu lista de agentes; a la derecha está el agente elegid
 | **Autonomía** | **Supervisada** pregunta antes de editar y antes de comandos fuera de su lista. **Equilibrada** edita sin preguntar y consulta los demás comandos. **Autónoma** pregunta lo mínimo |
 | **Subagentes** | Si el agente puede abrir ayudantes, y cuántos a la vez |
 | **Límites de uso** | Porcentaje del uso semanal y de 5 horas de tu cuenta en el que los agentes se detienen y te avisan. 0 es sin límite |
+
+**Proyectos**
+
+| Opción | Qué decide |
+|---|---|
+| **Usar la predeterminada** | La de la variable `DIXI_TOWER_PROJECTS` o, si no existe, `~/projects`. La pestaña dice cuál es y de dónde sale |
+| **Esta carpeta** | La ruta que escribes o eliges con **Elegir…** (solo se puede navegar dentro de tu carpeta personal; una ruta de fuera se puede escribir a mano) |
+| **Ninguna** | No hay carpeta de proyectos: al lanzar cada agente se pide la ruta del repositorio |
+
+**Tareas**
+
+| Ajuste | Qué decide |
+|---|---|
 | **Tope de tareas en revisión** | Solo para proyectos con lista de tareas (sección 4) |
+| **Dirección de tu tablero de tareas** | Opcional, con `http://` o `https://`. Si la pones, el panel muestra un enlace al tablero abajo a la izquierda; vacía, desaparece |
 
 En cualquier nivel, un agente nunca integra, despliega, publica en la rama base ni lee secretos: termina en un pull request.
 
@@ -136,7 +156,7 @@ Pulsa **＋ Nuevo agente**.
 
 ![Nuevo agente](img/es-new-agent.png)
 
-1. **Proyecto**: elige un repositorio de tu carpeta de proyectos.
+1. **Proyecto**: elige un repositorio de tu carpeta de proyectos. Si el tuyo está en otro sitio, elige **Otro repositorio (ruta)…**, escribe la ruta absoluta de su raíz (la carpeta que contiene `.git`) o pulsa **Elegir…**. Si pusiste **Ninguna** en Configuración › Proyectos, el formulario pide solo la ruta.
 2. **Instrucción**: lo que quieres que haga, con tus palabras.
 3. **Motor** y **Autonomía**: arrancan con tus valores de partida; cámbialos para este agente si quieres.
 4. **Lanzar agente**.
@@ -237,6 +257,7 @@ Su rama está en tu repositorio (`git branch --list 'agente/*' 'st/*'`), lista p
 
 | Lo que ves | Qué hacer |
 |---|---|
+| No veo mis proyectos al lanzar un agente | Mira **Configuración › Proyectos**: la carpeta debe existir y tener repositorios git directamente dentro. `dixi-tower doctor` dice qué carpeta usa y de dónde sale. Si el tuyo está en otro sitio, usa **Otro repositorio (ruta)…** |
 | El panel no abre | `dixi-tower servicio estado`. Si no responde, `dixi-tower servicio reiniciar` y revisa `~/.dixi-tower/panel.log` |
 | «Sin conexión con el panel» | Se reintenta solo; pulsa **Reintentar ahora** para probar ya. Si no vuelve, levántalo de nuevo (`dixi-tower servicio reiniciar` o `dixi-tower panel`) |
 | Un agente se queda en **Lanzando** | Mira su consola: puede que el motor te esté preguntando algo o que no tenga sesión iniciada. Inicia sesión con `claude` o `codex` en una terminal |

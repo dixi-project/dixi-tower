@@ -8,6 +8,7 @@ Dos niveles:
 Uso como programa:
   config.py global                          imprime la configuración global
   config.py valor <clave>                   imprime un valor global (p. ej. tope_revision)
+  config.py proyectos                       imprime la carpeta de proyectos en uso (vacía si no hay)
   config.py agente <agente>                 imprime la de un agente
   config.py nueva [--motor M] [--autonomia A]   global + lo indicado, validada
 """
@@ -15,7 +16,7 @@ import json
 import os
 import re
 import sys
-
+from urllib.parse import urlsplit
 
 
 def _carpeta_de_datos():
@@ -115,6 +116,63 @@ def tablero():
     return None
 
 
+def carpeta_proyectos():
+    """Carpeta donde viven tus repositorios, o "" si se eligió no tener ninguna.
+
+    Manda la clave `carpeta_proyectos` de la configuración; si no está, la variable
+    de entorno y, al final, ~/projects.
+    """
+    valor = _leer(ruta_global()).get("carpeta_proyectos")
+    if isinstance(valor, str):
+        return valor
+    return entorno("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects"))
+
+
+def origen_carpeta():
+    """De dónde sale la carpeta: "config", "DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR" o "predeterminada"."""
+    if isinstance(_leer(ruta_global()).get("carpeta_proyectos"), str):
+        return "config"
+    for variable in ("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR"):
+        if os.environ.get(variable):
+            return variable
+    return "predeterminada"
+
+
+def _con_control(texto):
+    return any(ord(c) < 32 or ord(c) == 127 for c in texto)
+
+
+def validar_carpeta(valor):
+    """Qué guardar como `carpeta_proyectos`: None (borrar la clave), "" (ninguna) o una ruta absoluta."""
+    if valor is None:
+        return None
+    if not isinstance(valor, str) or len(valor) > 1024 or _con_control(valor):
+        raise ValueError("p_carpeta_invalida")
+    if not valor.strip(" "):
+        return ""
+    ruta = os.path.expanduser(valor.strip(" "))
+    if not os.path.isabs(ruta) or not os.path.isdir(ruta):
+        raise ValueError("p_carpeta_invalida")
+    return os.path.abspath(ruta)
+
+
+def validar_tablero(valor):
+    """Qué guardar como `tablero`: None (borrar la clave) o una dirección http(s) con host."""
+    if valor is None or valor == "":
+        return None
+    if not isinstance(valor, str):
+        raise ValueError("p_tablero_invalido")
+    url = valor.strip(" ")
+    try:
+        ok = (0 < len(url) <= 2048 and not any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in url)
+              and url.lower().startswith(("http://", "https://")) and bool(urlsplit(url).netloc))
+    except ValueError:
+        ok = False
+    if not ok:
+        raise ValueError("p_tablero_invalido")
+    return url
+
+
 def _leer(ruta):
     try:
         with open(ruta, encoding="utf-8") as fh:
@@ -144,12 +202,20 @@ def global_():
 
 
 def guardar_global(datos):
-    nueva = normalizar(datos, global_())
-    propios = motores_propios()          # se editan a mano en el archivo: no se pierden al guardar
-    if propios:
-        nueva["motores"] = propios
-    if tablero():
-        nueva["tablero"] = tablero()
+    """Guarda la global. Conserva toda clave del archivo que no gestiona `normalizar`
+    (motores propios, tablero, carpeta_proyectos, desconocidas). Si algo no es válido,
+    lanza ValueError sin tocar el archivo."""
+    datos = datos if isinstance(datos, dict) else {}
+    actual = _leer(ruta_global())
+    nueva = dict(actual) if isinstance(actual, dict) else {}
+    nueva.update(normalizar(datos, global_()))
+    for clave, validar in (("carpeta_proyectos", validar_carpeta), ("tablero", validar_tablero)):
+        if clave in datos:
+            valor = validar(datos[clave])
+            if valor is None:
+                nueva.pop(clave, None)
+            else:
+                nueva[clave] = valor
     _escribir(ruta_global(), nueva)
     return nueva
 
@@ -193,6 +259,9 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if args[:1] == ["valor"] and len(args) == 2:
         print(global_().get(args[1], ""))
+        sys.exit(0)
+    if args[:1] == ["proyectos"]:
+        print(carpeta_proyectos())
         sys.exit(0)
     if args[:1] == ["agente"] and len(args) == 2:
         salida = de_agente(args[1])

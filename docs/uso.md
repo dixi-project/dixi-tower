@@ -30,6 +30,7 @@ Por terminal:
 dixi-tower siguiente <proyecto>                    # candidatas del backlog
 dixi-tower lanzar <proyecto> <st-id> [--forzar]    # con tarea del tablero
 dixi-tower lanzar <proyecto> libre --instruccion <archivo>
+dixi-tower lanzar /ruta/al/repo libre --instruccion <archivo>   # un repo de cualquier sitio (ruta absoluta de su raíz)
 dixi-tower estado
 dixi-tower ver <agente> | decir <agente> "<msg>" | detener <agente>
 dixi-tower reanudar <agente>                       # encender uno cerrado y retomar su conversación
@@ -37,9 +38,11 @@ dixi-tower eliminar <agente>                       # quitar uno cerrado y su wor
 tmux attach -t dixi-tower                          # consolas en vivo
 ```
 
+Tras cambiar la carpeta de proyectos, `lanzar <nombre>` por CLI usa el proyecto ya registrado con ese nombre; si hay duda, usa la ruta absoluta. El registro guarda la ruta real (sin symlinks).
+
 ## Configuración
 
-Se cambia desde el panel: **Configuración** (valores con los que nace cada agente, en `~/.dixi-tower/config.json`) y **Ajustes** en la ficha de cada agente (su copia propia, en su archivo de estado).
+Se cambia desde el panel: **Configuración** (valores con los que nace cada agente, en `~/.dixi-tower/config.json`; tiene tres pestañas, **Agentes**, **Proyectos** y **Tareas**) y **Ajustes** en la ficha de cada agente (su copia propia, en su archivo de estado).
 
 | Ajuste | Opciones | Cuándo aplica |
 |---|---|---|
@@ -47,6 +50,8 @@ Se cambia desde el panel: **Configuración** (valores con los que nace cada agen
 | Autonomía | `supervisada`, `equilibrada`, `autonoma` | Al encender el agente |
 | Subagentes | permitidos o no, y máximo abiertos a la vez (1 a 20) | Claude: de inmediato. Codex: al encender |
 | Límite de uso semanal y de sesión (5 h) | porcentaje de la cuenta; 0 = sin límite | Claude: de inmediato. Codex: se muestra, no se aplica |
+| Carpeta de proyectos (pestaña Proyectos, clave `carpeta_proyectos`) | la predeterminada (variable de entorno o `~/projects`), una carpeta o ninguna (se pide la ruta de cada repo) | De inmediato, sin reiniciar el panel. Manda sobre la variable de entorno |
+| Tope de tareas en revisión y dirección del tablero (pestaña Tareas, claves `tope_revision` y `tablero`) | número (0 = sin tope) y URL `http(s)://` opcional | Al lanzar; el enlace, al recargar |
 
 Cómo se traduce la autonomía en cada motor:
 
@@ -82,7 +87,7 @@ Qué esperar con Codex:
 | Pieza | Qué hace |
 |---|---|
 | `dixi-tower` | Crea el worktree y la rama, arma el prompt y abre el agente en una ventana de la sesión tmux `dixi-tower` |
-| `~/.dixi-tower/proyectos.json` | Registro de proyectos (repo, rama base y comando de flujo). Un repo de la carpeta de proyectos se da de alta solo al lanzarlo (`registro.py`) |
+| `~/.dixi-tower/proyectos.json` | Registro de proyectos (repo, rama base y comando de flujo). Un repo de la carpeta de proyectos, o uno lanzado por su ruta absoluta, se da de alta solo al lanzarlo (`registro.py`); la clave de uno lanzado por ruta es su nombre de carpeta saneado (`-2`, `-3`… si ya la usa otro repo) |
 | `worker-settings.json` | Permisos y hooks que se inyectan al agente con `--settings`, sin tocar el repo del proyecto |
 | `worker-prompt.md` | Reglas del agente: una tarea, termina en PR, nunca integra ni despliega |
 | `hooks/estado-hook.py` | Escribe `~/.dixi-tower/estado/<agente>.json` en cada evento y avisa por macOS cuando el agente se detiene |
@@ -149,7 +154,7 @@ Si un proyecto tiene `tasks/TASKS.md` con el formato de [sys_task](https://task.
 - El formulario de «Nuevo agente» ofrece las tareas pendientes, por prioridad.
 - La rama se llama `st/<id>-<resumen>`, que es la convención con la que sys_task mueve la tarjeta.
 - Se puede fijar un **tope de tareas en revisión** por proyecto en Configuración: con más tareas en `[r]` que el tope, no se lanza un agente nuevo salvo que se fuerce. De fábrica es 0, desactivado.
-- Para tener a mano tu tablero, agrega su dirección en `config.json` de la carpeta de datos: `"tablero": "https://task.ejemplo.com/"`. El panel muestra entonces el enlace «Abrir el tablero de tareas»; sin esa clave no aparece.
+- Para tener a mano tu tablero, escribe su dirección en **Configuración › Tareas** (se guarda como `"tablero": "https://task.ejemplo.com/"` en `config.json`). El panel muestra entonces el enlace «Abrir el tablero de tareas»; vacía, no aparece.
 
 ## Comandos «/» en el panel
 
@@ -177,7 +182,7 @@ Los nombres anteriores (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) se siguen acepta
 
 | Variable | Por defecto | Para qué |
 |---|---|---|
-| `DIXI_TOWER_PROJECTS` | `~/projects` | Carpeta cuyos repositorios se pueden lanzar |
+| `DIXI_TOWER_PROJECTS` | `~/projects` | Carpeta cuyos repositorios se pueden lanzar. Solo si no hay una carpeta fijada en Configuración › Proyectos |
 | `DIXI_TOWER_HOME` | `~/.dixi-tower` | Carpeta de datos: estado, configuración, scripts de arranque y worktrees. Si solo existe `~/.agentes` (instalaciones anteriores), se usa esa |
 | `DIXI_TOWER_PORT` | `4310` | Puerto del panel |
 | `DIXI_TOWER_NOTIFY` | `1` | `0` apaga las notificaciones |
@@ -186,7 +191,7 @@ Los nombres anteriores (`DIXI_AGENTES_*`, `DIXI_PROYECTOS_DIR`) se siguen acepta
 
 ## Seguridad del panel
 
-Escucha solo en `127.0.0.1`, rechaza peticiones cuya cabecera `Host` no sea local y exige un token para toda acción que escribe (enviar texto o teclas, detener, lanzar, guardar adjuntos). El token se guarda en la carpeta de datos, legible solo por ti. Quien pueda abrir el panel puede dar instrucciones a los agentes: no lo expongas por túnel ni proxy.
+Escucha solo en `127.0.0.1`, rechaza peticiones cuya cabecera `Host` no sea local y exige un token para toda acción que escribe (enviar texto o teclas, detener, lanzar, guardar adjuntos). El token se guarda en la carpeta de datos, legible solo por ti. Lanzar por ruta valida la ruta en el servidor: absoluta, sin caracteres de control, raíz de un repositorio git (con `.git`) y fuera de la carpeta de datos; el panel llama al lanzador sin shell. Quien pueda abrir el panel puede dar instrucciones a los agentes: no lo expongas por túnel ni proxy.
 
 ## Links
 

@@ -33,7 +33,6 @@ from mensajes import t as tr
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 HOME_AG = config.HOME_AG
-PROYECTOS_DIR = config.entorno("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects"))
 REGISTRO = os.environ.get("DIXI_AGENTES_REGISTRO", os.path.join(HOME_AG, "proyectos.json"))
 
 
@@ -534,15 +533,47 @@ def comandos(idioma, agente):
     return unicos
 
 
+def carpeta():
+    """Carpeta de proyectos en uso. Se consulta en cada petición: cambiarla en Configuración no pide reiniciar."""
+    return config.carpeta_proyectos()
+
+
 def carpetas():
     """Repos git que son hijos directos de la carpeta de proyectos."""
+    base = carpeta()
     try:
-        nombres = sorted(os.listdir(PROYECTOS_DIR), key=str.lower)
+        nombres = sorted(os.listdir(base), key=str.lower) if base else []
     except OSError:
         return []
     return [n for n in nombres
             if NOMBRE_OK.match(n) and "@" not in n and not n.startswith(".")
-            and os.path.exists(os.path.join(PROYECTOS_DIR, n, ".git"))]
+            and os.path.exists(os.path.join(base, n, ".git"))]
+
+
+def info_carpeta():
+    """La carpeta de proyectos tal como la ve Configuración › Proyectos."""
+    efectiva, origen = config.carpeta_proyectos(), config.origen_carpeta()
+    modo = ("ninguna" if not efectiva else "carpeta") if origen == "config" else "predeterminada"
+    entorno = next((v for v in ("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR") if os.environ.get(v)), "predeterminada")
+    return {"modo": modo, "valor": efectiva if modo == "carpeta" else "", "efectiva": efectiva,
+            "origen": origen, "disponible": bool(efectiva) and os.path.isdir(efectiva),
+            "base": config.entorno("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects")),
+            "base_origen": entorno}
+
+
+def validar_ruta_repo(ruta):
+    """(ruta real, None) si `ruta` es la raíz de un repo git fuera de la carpeta de
+    datos; si no, (None, clave del mensaje). Las mismas reglas que registro.py."""
+    if (not isinstance(ruta, str) or not ruta or len(ruta) > 1024 or not os.path.isabs(ruta)
+            or any(ord(c) < 32 or ord(c) == 127 for c in ruta)):
+        return None, "p_ruta_invalida"
+    real = os.path.realpath(ruta)
+    if not os.path.exists(os.path.join(real, ".git")) or not os.path.isdir(real):
+        return None, "p_ruta_invalida"
+    datos = os.path.realpath(HOME_AG)
+    if real == datos or real.startswith(datos + os.sep):
+        return None, "p_ruta_en_datos"
+    return real, None
 
 
 def opciones_proyecto(idioma):
@@ -551,11 +582,10 @@ def opciones_proyecto(idioma):
             + "".join(f'<option value="{e(n, quote=True)}">{e(n)}</option>' for n in carpetas()))
 
 
-def opciones_tarea(idioma, proyecto):
+def opciones_tarea(idioma, repo):
     """Tareas [ ] con id del backlog del proyecto, leídas de su copia local (sin red)."""
     e = html.escape
     out = [f'<option value="libre">{e(CAT[idioma]["tarea_libre"])}</option>']
-    repo = os.path.join(PROYECTOS_DIR, proyecto)
     txt = ""
     for ref in ("origin/HEAD", "origin/main", "origin/master", "HEAD"):
         txt = sh("git", "-C", repo, "show", f"{ref}:tasks/TASKS.md")
@@ -578,9 +608,17 @@ def opciones_tarea(idioma, proyecto):
 
 def lanzar(datos):
     i = datos.get("_idioma")
-    p, tarea, instr = datos.get("proyecto"), datos.get("tarea") or "libre", datos.get("instruccion") or ""
-    if not isinstance(p, str) or p not in carpetas():
-        return 400, tr("p_proyecto_invalido", i)
+    tarea, instr = datos.get("tarea") or "libre", datos.get("instruccion") or ""
+    if datos.get("ruta") is not None:
+        destino, error = validar_ruta_repo(datos["ruta"])
+        if error:
+            return 400, tr(error, i)
+        p = re.sub(r"[^\w-]", "-", os.path.basename(destino)).strip("-") or "repo"
+    else:
+        p = datos.get("proyecto")
+        if not isinstance(p, str) or p not in carpetas():
+            return 400, tr("p_proyecto_invalido", i)
+        destino = os.path.join(carpeta(), p)
     if not isinstance(tarea, str) or not (tarea == "libre" or TAREA_OK.match(tarea)):
         return 400, tr("p_tarea_invalida", i)
     if not isinstance(instr, str) or len(instr) > 8000:
@@ -588,7 +626,7 @@ def lanzar(datos):
     instr = "".join(ch for ch in instr if ch in "\n\t" or ord(ch) >= 32).strip()
     if tarea == "libre" and not instr:
         return 400, tr("falta_instruccion", i)
-    args = ["bash", os.path.join(DIR, "agentes.sh"), "lanzar", p, tarea]
+    args = ["bash", os.path.join(DIR, "agentes.sh"), "lanzar", destino, tarea]
     if datos.get("motor") in config.motores_disponibles():
         args += ["--motor", datos["motor"]]
     if datos.get("autonomia") in config.AUTONOMIAS:
@@ -636,7 +674,7 @@ def explorar(ruta, i=None):
     """Lista una carpeta del usuario para elegir una ruta real. Solo dentro de su
     carpeta personal y sin archivos ocultos (donde suelen vivir llaves y secretos)."""
     casa = os.path.realpath(os.path.expanduser("~"))
-    actual = os.path.realpath(ruta) if isinstance(ruta, str) and ruta else os.path.realpath(PROYECTOS_DIR)
+    actual = os.path.realpath(ruta if isinstance(ruta, str) and ruta else (carpeta() or casa))
     if not os.path.isdir(actual):
         actual = casa
     if actual != casa and not actual.startswith(casa + os.sep):
@@ -665,16 +703,22 @@ def accion(datos):
         return explorar(datos.get("ruta"), i)
     if datos.get("lanzar") is True:
         return lanzar(datos)
+    if datos.get("tareas") is True:
+        repo, error = validar_ruta_repo(datos.get("ruta"))
+        return (400, tr(error, i)) if error else (200, opciones_tarea(i or "es", repo))
     if datos.get("guardar_config") is True:
         nueva, ag = datos.get("config"), datos.get("agente")
         if not isinstance(nueva, dict):
             return 400, tr("p_config_invalida", i)
         if ag is None:
-            config.guardar_global(nueva)
+            try:
+                config.guardar_global(nueva)
+            except ValueError as ex:
+                return 400, tr(ex.args[0] if ex.args and ex.args[0] in ("p_carpeta_invalida", "p_tablero_invalido") else "p_config_invalida", i)
             return 200, "guardada"
         if not isinstance(ag, str) or not NOMBRE_OK.match(ag) or ag not in proyectos_con_estado():
             return 404, tr("p_agente_desconocido", i)
-        config.guardar_agente(ag, nueva)
+        config.guardar_agente(ag, {k: v for k, v in nueva.items() if k not in ("carpeta_proyectos", "tablero")})
         return 200, "guardada"
     orden = "reanudar" if datos.get("reanudar") is True else "eliminar" if datos.get("eliminar") is True else None
     if orden:
@@ -731,7 +775,7 @@ aside{display:flex;flex-direction:column;min-height:0;background:var(--panel);bo
 h1{margin:0;font-size:18px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
 .marca p{margin:2px 0 0;color:var(--tenue);font-size:12.5px}
 .controles{display:grid;gap:8px;padding:0 16px 12px}
-input[type=search],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--borde);border-radius:6px;
+input[type=search],input[type=text],input[type=url],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--borde);border-radius:6px;
 background:var(--fondo);color:var(--texto);font:13.5px/1.4 inherit;font-family:inherit}
 .controles label{display:grid;gap:3px;color:var(--tenue);font-size:12px}
 #lado{flex:1;min-height:0;overflow-y:auto;padding:0 8px 12px;border-top:1px solid var(--borde)}
@@ -825,6 +869,11 @@ dialog p{margin:6px 0 0;font-size:13px}
 dialog label{display:grid;gap:4px;margin-top:14px;font-size:12.5px;color:var(--tenue)}
 dialog label.fila{display:flex;gap:8px;align-items:center;color:var(--texto)}
 dialog textarea{resize:vertical}
+.pestanas{display:flex;gap:4px;margin-top:14px;border-bottom:1px solid var(--borde)}
+.pestanas button{font:13px/1 inherit;font-family:inherit;padding:8px 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tenue);cursor:pointer}
+.pestanas button[aria-selected=true]{color:var(--texto);font-weight:600;border-bottom-color:var(--azul)}
+.ruta-fila{display:flex;gap:8px}.ruta-fila input{flex:1}
+dialog fieldset{border:0;padding:0;margin:14px 0 0}dialog legend{padding:0;font-size:12.5px;color:var(--tenue)}
 #n-error{color:var(--rojo)}
 dialog .botones{justify-content:flex-end;margin-top:18px}
 button:disabled,select:disabled{opacity:.55;cursor:default}
@@ -850,7 +899,7 @@ JS = """
   function letra(d){tam=Math.max(8,Math.min(18,tam+d));term.style.fontSize=tam+'px';localStorage.setItem('torre.letra',tam);}
   function items(){return [].slice.call(lado.querySelectorAll('.item'));}
   function visibles(){return items().filter(function(b){return !b.parentNode.hidden;});}
-  function sugerir(s){propuesta=s||'';txt.placeholder=propuesta?txt.dataset.sugerida.replace('{texto}',propuesta):txt.dataset.base;}
+  function sugerir(s){propuesta=s||'';txt.placeholder=propuesta?txt.dataset.sugerida.replace('{texto}',function(){return propuesta;}):txt.dataset.base;}
   function armar(si){armado=si;parar.classList.toggle('armado',si);parar.textContent=si?parar.dataset.confirmar:parar.dataset.normal;}
 
   function aplicar(){
@@ -992,7 +1041,7 @@ JS = """
     txt.value=antes+texto+' '+despues;
     var c=(antes+texto+' ').length;txt.focus();txt.setSelectionRange(c,c);cerrarSug();
   }
-  function avisoAdj(clave,nombre){adj.textContent=(adj.dataset[clave]||'').replace('{nombre}',nombre||'');adj.hidden=false;}
+  function avisoAdj(clave,nombre){adj.textContent=(adj.dataset[clave]||'').replace('{nombre}',function(){return nombre||'';});adj.hidden=false;}
   function subir(archivos){
     if(!sel||!archivos.length)return;
     var p=sel,cola=[].slice.call(archivos);
@@ -1008,8 +1057,13 @@ JS = """
         .catch(function(){avisoAdj('error',f.name);});
     })();
   }
-  var ex=$('explorar'),exL=$('ex-lista'),exR=$('ex-ruta'),exE=$('ex-error'),exActual=null;
-  function abrirExplorar(ruta){
+  var ex=$('explorar'),exL=$('ex-lista'),exR=$('ex-ruta'),exE=$('ex-error'),exActual=null,exElegir=null;
+  // Cada apertura fija su modo: alElegir (si se pasa) pone el explorador en modo carpeta: sin archivos y entregando la ruta a esa función.
+  function abrirExplorar(ruta,alElegir){
+    exElegir=alElegir||null;
+    var modoCarpeta=!!exElegir;
+    $('ex-t').textContent=$('ex-t').dataset[modoCarpeta?'carpeta':'normal'];
+    $('ex-nota').textContent=$('ex-nota').dataset[modoCarpeta?'carpeta':'normal'];
     pedir({explorar:true,ruta:ruta||exActual||null}).then(function(m){
       var d=JSON.parse(m);exActual=d.ruta;exR.textContent=d.ruta;exL.textContent='';exE.hidden=true;
       function fila(nombre,tipo,destino){
@@ -1019,16 +1073,23 @@ JS = """
       }
       if(d.padre)fila('..','carpeta',d.padre);
       d.carpetas.forEach(function(n){fila(n+'/','carpeta',d.ruta+'/'+n);});
-      d.archivos.forEach(function(n){fila(n,'archivo',d.ruta+'/'+n);});
+      if(!modoCarpeta)d.archivos.forEach(function(n){fila(n,'archivo',d.ruta+'/'+n);});
       if(!ex.open)ex.showModal();
-    }).catch(function(m){exE.textContent=(typeof m==='string'&&m)?m:'';exE.hidden=!exE.textContent;if(!ex.open)mal();});
+    }).catch(function(m){
+      if(ruta&&!ex.open&&modoCarpeta){abrirExplorar(null,alElegir);return;}
+      exE.textContent=(typeof m==='string'&&m)?m:'';exE.hidden=!exE.textContent;if(!ex.open)mal();});
   }
   $('adjuntar').addEventListener('click',function(){if(sel)abrirExplorar();});
   $('ex-cancelar').addEventListener('click',function(){ex.close();});
-  $('ex-usar').addEventListener('click',function(){if(exActual){ex.close();insertar(citar(exActual));}});
+  $('ex-usar').addEventListener('click',function(){
+    if(!exActual)return;
+    ex.close();
+    if(exElegir)exElegir(exActual);else insertar(citar(exActual));
+  });
+  ex.addEventListener('close',function(){exElegir=null;});
   exL.addEventListener('click',function(ev){
     var b=ev.target.closest('button');if(!b)return;
-    if(b.dataset.tipo==='carpeta')abrirExplorar(b.dataset.destino);
+    if(b.dataset.tipo==='carpeta')abrirExplorar(b.dataset.destino,exElegir);
     else{ex.close();insertar(citar(b.dataset.destino));}
   });
   ['dragenter','dragover'].forEach(function(n){form.addEventListener(n,function(ev){
@@ -1187,22 +1248,51 @@ JS = """
   });
 
   // ── Configuración global y ajustes por agente (ajAgente=null → global)
-  var aj=$('ajustes'),ajAgente=null,ajE=$('aj-error');
+  var aj=$('ajustes'),ajAgente=null,ajE=$('aj-error'),ajTablero='';
+  var pestanas=[].slice.call(aj.querySelectorAll('[data-pestana]'));
+  function mostrarPestana(nombre,foco){
+    pestanas.forEach(function(b){
+      var activa=b.dataset.pestana===nombre;
+      b.setAttribute('aria-selected',activa?'true':'false');b.tabIndex=activa?0:-1;
+      $(b.getAttribute('aria-controls')).hidden=!activa;
+      if(activa&&foco)b.focus();
+    });
+  }
+  $('aj-pestanas').addEventListener('click',function(ev){var b=ev.target.closest('[data-pestana]');if(b)mostrarPestana(b.dataset.pestana,false);});
+  $('aj-pestanas').addEventListener('keydown',function(ev){
+    var i=pestanas.indexOf(document.activeElement);if(i<0)return;
+    var j={ArrowRight:(i+1)%pestanas.length,ArrowLeft:(i+pestanas.length-1)%pestanas.length,Home:0,End:pestanas.length-1}[ev.key];
+    if(j===undefined)return;
+    ev.preventDefault();mostrarPestana(pestanas[j].dataset.pestana,true);
+  });
   function leerConfig(agente){
     return fetch('/api/config'+(agente?'/'+encodeURIComponent(agente):''),{cache:'no-store'})
       .then(function(r){if(!r.ok)throw 0;return r.json();});
+  }
+  function rellenarCarpeta(cp){
+    var origen=$('aj-origenes').getAttribute('data-'+cp.base_origen)||cp.base_origen;
+    $('aj-c-pred').textContent=$('aj-c-pred').dataset.plantilla.replace('{carpeta}',function(){return cp.base;}).replace('{origen}',function(){return origen;});
+    document.querySelector('input[name=aj-cmodo][value='+(cp.modo==='carpeta'?'carpeta':cp.modo==='ninguna'?'ninguna':'predeterminada')+']').checked=true;
+    $('aj-carpeta').value=cp.valor||'';
+    $('aj-c-aviso').hidden=cp.disponible||cp.modo==='ninguna';
   }
   function abrirAjustes(agente){
     leerConfig(agente).then(function(d){
       var c=d.config,modo=agente?'agente':'global';
       ajAgente=agente||null;ajE.hidden=true;
-      $('aj-t').textContent=$('aj-t').dataset[modo].replace('{agente}',agente||'');
+      $('aj-t').textContent=$('aj-t').dataset[modo].replace('{agente}',function(){return agente||'';});
       $('aj-nota').textContent=$('aj-nota').dataset[modo];
       $('aj-motor').value=c.motor;$('aj-autonomia').value=c.autonomia;
       $('aj-sub').checked=c.subagentes.permitidos;$('aj-submax').value=c.subagentes.max;
       $('aj-submax').disabled=!c.subagentes.permitidos;
       $('aj-semana').value=c.limites.semana;$('aj-sesion').value=c.limites.sesion;
-      $('aj-global').hidden=!!agente;$('aj-tope').value=c.tope_revision||0;
+      $('aj-pestanas').hidden=!!agente;
+      if(!agente){
+        $('aj-tope').value=c.tope_revision||0;
+        ajTablero=d.tablero||'';$('aj-tablero').value=ajTablero;
+        rellenarCarpeta(d.carpeta_proyectos);
+      }
+      mostrarPestana('agentes',false);
       aj.showModal();
     }).catch(mal);
   }
@@ -1210,39 +1300,77 @@ JS = """
   ficha.addEventListener('click',function(ev){if(ev.target.closest('[data-ajustes]')&&sel)abrirAjustes(sel);});
   $('aj-sub').addEventListener('change',function(){$('aj-submax').disabled=!$('aj-sub').checked;});
   $('aj-cancelar').addEventListener('click',function(){aj.close();});
+  $('aj-carpeta').addEventListener('input',function(){document.querySelector('input[name=aj-cmodo][value=carpeta]').checked=true;});
+  $('aj-elegir').addEventListener('click',function(){
+    abrirExplorar($('aj-carpeta').value.trim()||undefined,function(ruta){
+      $('aj-carpeta').value=ruta;document.querySelector('input[name=aj-cmodo][value=carpeta]').checked=true;
+    });
+  });
   $('form-ajustes').addEventListener('submit',function(ev){
     ev.preventDefault();ajE.hidden=true;
     var c={motor:$('aj-motor').value,autonomia:$('aj-autonomia').value,
       subagentes:{permitidos:$('aj-sub').checked,max:parseInt($('aj-submax').value,10)||1},
       limites:{semana:parseInt($('aj-semana').value,10)||0,sesion:parseInt($('aj-sesion').value,10)||0}};
-    if(!ajAgente)c.tope_revision=parseInt($('aj-tope').value,10)||0;
+    if(!ajAgente){
+      c.tope_revision=parseInt($('aj-tope').value,10)||0;
+      var modo=document.querySelector('input[name=aj-cmodo]:checked').value,ruta=$('aj-carpeta').value.trim();
+      if(modo==='carpeta'&&!ruta){
+        mostrarPestana('proyectos',true);ajE.textContent=ajE.dataset.sinruta;ajE.hidden=false;return;
+      }
+      c.carpeta_proyectos=modo==='predeterminada'?null:modo==='ninguna'?'':ruta;
+      c.tablero=$('aj-tablero').value.trim();
+    }
     fetch('/api/accion',{method:'POST',cache:'no-store',
       headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},
       body:JSON.stringify({guardar_config:true,agente:ajAgente,config:c})})
       .then(function(r){if(r.status===403){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;});})
-      .then(function(){aj.close();cargarFicha();})
+      .then(function(){aj.close();if(!ajAgente&&c.tablero!==ajTablero)location.reload();else cargarFicha();})
       .catch(function(m){ajE.textContent=(typeof m==='string'&&m)?m:ajE.dataset.generico;ajE.hidden=false;});
   });
 
   var dlg=$('nuevo'),nP=$('n-proyecto'),nT=$('n-tarea'),nI=$('n-instr'),nE=$('n-error'),nL=$('n-lanzar'),nF=$('n-forzar');
+  var nR=$('n-ruta'),OTRA='__otra__';
+  function pedirRuta(){return nP.hidden||nP.value===OTRA;}
+  // La ruta se pide cuando no hay carpeta de proyectos o se eligió «Otro repositorio».
+  function ajustarNuevo(){
+    var r=pedirRuta();
+    $('n-bloque-ruta').hidden=!r;nR.required=r;nP.required=!nP.hidden;
+  }
+  function cargarTareas(){
+    nT.disabled=true;nT.innerHTML='';nE.hidden=true;
+    if(pedirRuta()){
+      if(!nR.value.trim())return;
+      pedir({tareas:true,ruta:nR.value.trim()}).then(function(h){nT.innerHTML=h;nT.disabled=false;})
+        .catch(function(m){nE.textContent=(typeof m==='string'&&m)?m:nE.dataset.generico;nE.hidden=false;});
+    }else if(nP.value){
+      traer('tareas/'+encodeURIComponent(nP.value)).then(function(h){nT.innerHTML=h;nT.disabled=false;}).catch(mal);
+    }
+  }
   $('abrir-nuevo').addEventListener('click',function(){
-    nE.hidden=true;nT.innerHTML='';nT.disabled=true;
-    leerConfig(null).then(function(d){$('n-motor').value=d.config.motor;$('n-autonomia').value=d.config.autonomia;}).catch(function(){});
-    traer('carpetas').then(function(h){nP.innerHTML=h;dlg.showModal();nP.focus();}).catch(mal);
+    nE.hidden=true;nT.innerHTML='';nT.disabled=true;nR.value='';
+    Promise.all([leerConfig(null).catch(function(){return null;}),traer('carpetas')]).then(function(r){
+      var d=r[0],sin=!!d&&!d.carpeta_proyectos.disponible;
+      if(d){$('n-motor').value=d.config.motor;$('n-autonomia').value=d.config.autonomia;}
+      nP.innerHTML=r[1]+'<option value="'+OTRA+'">'+$('n-lbl-proyecto').dataset.otra+'</option>';
+      nP.hidden=sin;$('n-lbl-proyecto').hidden=sin;$('n-sin-carpeta').hidden=!sin;
+      nP.value=sin?OTRA:'';ajustarNuevo();dlg.showModal();(sin?nR:nP).focus();
+    }).catch(mal);
   });
-  nP.addEventListener('change',function(){
-    nT.disabled=true;nT.innerHTML='';if(!nP.value)return;
-    traer('tareas/'+encodeURIComponent(nP.value)).then(function(h){nT.innerHTML=h;nT.disabled=false;}).catch(mal);
+  nP.addEventListener('change',function(){ajustarNuevo();cargarTareas();});
+  nR.addEventListener('change',cargarTareas);
+  $('n-elegir').addEventListener('click',function(){
+    abrirExplorar(nR.value.trim()||undefined,function(ruta){nR.value=ruta;cargarTareas();});
   });
   $('n-cancelar').addEventListener('click',function(){dlg.close();});
   $('form-nuevo').addEventListener('submit',function(ev){
     ev.preventDefault();
-    if(!nP.value||nL.disabled)return;
-    var p=nP.value;
+    if(nL.disabled)return;
+    var destino=pedirRuta()?{ruta:nR.value.trim()}:{proyecto:nP.value},p=destino.proyecto||destino.ruta;
+    if(!p)return;
     nE.hidden=true;nL.disabled=true;nL.textContent=nL.dataset.ocupado;
     fetch('/api/accion',{method:'POST',cache:'no-store',
       headers:{'Content-Type':'application/json','X-Panel-Token':token,'X-Idioma':lang},
-      body:JSON.stringify({lanzar:true,proyecto:p,tarea:nT.value||'libre',instruccion:nI.value,forzar:nF.checked,motor:$('n-motor').value,autonomia:$('n-autonomia').value})})
+      body:JSON.stringify(Object.assign({lanzar:true,tarea:nT.value||'libre',instruccion:nI.value,forzar:nF.checked,motor:$('n-motor').value,autonomia:$('n-autonomia').value},destino))})
       .then(function(r){if(r.status===403){location.reload();}return r.text().then(function(m){if(!r.ok)throw m;return m;});})
       .then(function(m){p=m||p;dlg.close();nI.value='';nF.checked=false;return cargarLista();})
       .then(function(){elegir(p);})
@@ -1359,7 +1487,11 @@ def pagina(idioma):
   <form id="form-nuevo">
     <h2 id="nuevo-t">{e(t["nuevo_titulo"])}</h2>
     <p class="tenue">{e(t["nuevo_nota"])}</p>
-    <label>{e(t["proyecto"])}<select id="n-proyecto" required></select></label>
+    <label id="n-lbl-proyecto" data-otra="{e(t["n_otra_ruta"], quote=True)}">{e(t["proyecto"])}<select id="n-proyecto"></select></label>
+    <div id="n-bloque-ruta" hidden>
+      <p class="tenue" id="n-sin-carpeta" hidden>{e(t["n_sin_carpeta"])}</p>
+      <label>{e(t["n_ruta_label"])}<span class="ruta-fila"><input type="text" id="n-ruta" autocomplete="off" spellcheck="false"><button type="button" class="b" id="n-elegir">{e(t["carpeta_elegir"])}</button></span><span>{e(t["n_ruta_ayuda"])}</span></label>
+    </div>
     <label>{e(t["tarea_label"])}<select id="n-tarea" disabled></select></label>
     <label>{e(t["instruccion"])}<textarea id="n-instr" rows="4"></textarea><span>{e(t["instruccion_ayuda"])}</span></label>
     <div class="par">
@@ -1375,8 +1507,8 @@ def pagina(idioma):
   </form>
 </dialog>
 <dialog id="explorar" aria-labelledby="ex-t">
-  <h2 id="ex-t">{e(t["ruta_titulo"])}</h2>
-  <p class="tenue">{e(t["ruta_nota"])}</p>
+  <h2 id="ex-t" data-normal="{e(t["ruta_titulo"], quote=True)}" data-carpeta="{e(t["ruta_titulo_carpeta"], quote=True)}">{e(t["ruta_titulo"])}</h2>
+  <p class="tenue" id="ex-nota" data-normal="{e(t["ruta_nota"], quote=True)}" data-carpeta="{e(t["ruta_nota_carpeta"], quote=True)}">{e(t["ruta_nota"])}</p>
   <p id="ex-ruta"></p>
   <ul id="ex-lista"></ul>
   <p id="ex-error" role="alert" hidden></p>
@@ -1389,6 +1521,12 @@ def pagina(idioma):
   <form id="form-ajustes">
     <h2 id="aj-t" data-global="{e(t["config_titulo"], quote=True)}" data-agente="{e(t["ajustes_titulo"], quote=True)}"></h2>
     <p class="tenue" id="aj-nota" data-global="{e(t["config_nota"], quote=True)}" data-agente="{e(t["ajustes_nota"], quote=True)}"></p>
+    <div class="pestanas" role="tablist" id="aj-pestanas" aria-label="{e(t["config_tabs"], quote=True)}">
+      <button type="button" role="tab" id="tab-agentes" data-pestana="agentes" aria-controls="pan-agentes" aria-selected="true">{e(t["config_tab_agentes"])}</button>
+      <button type="button" role="tab" id="tab-proyectos" data-pestana="proyectos" aria-controls="pan-proyectos" aria-selected="false" tabindex="-1">{e(t["config_tab_proyectos"])}</button>
+      <button type="button" role="tab" id="tab-tareas" data-pestana="tareas" aria-controls="pan-tareas" aria-selected="false" tabindex="-1">{e(t["config_tab_tareas"])}</button>
+    </div>
+    <div role="tabpanel" id="pan-agentes" aria-labelledby="tab-agentes">
     <div class="par">
       <label>{e(t["motor"])}<select id="aj-motor">{op_motor}</select></label>
       <label>{e(t["autonomia"])}<select id="aj-autonomia">{op_autonomia}</select></label>
@@ -1402,11 +1540,26 @@ def pagina(idioma):
     </div>
     <p class="tenue">{e(t["limites_ayuda"])}</p>
     <p class="tenue">{e(t["codex_nota"])}</p>
-    <div id="aj-global">
+    </div>
+    <div role="tabpanel" id="pan-proyectos" aria-labelledby="tab-proyectos" hidden>
+      <fieldset>
+        <legend>{e(t["carpeta_label"])}</legend>
+        <span id="aj-origenes" data-DIXI_TOWER_PROJECTS="{e(t["carpeta_origen_DIXI_TOWER_PROJECTS"], quote=True)}" data-DIXI_PROYECTOS_DIR="{e(t["carpeta_origen_DIXI_PROYECTOS_DIR"], quote=True)}" data-predeterminada="{e(t["carpeta_origen_predeterminada"], quote=True)}" hidden></span>
+        <label class="fila"><input type="radio" name="aj-cmodo" value="predeterminada"> <span id="aj-c-pred" data-plantilla="{e(t["carpeta_modo_predeterminada"], quote=True)}"></span></label>
+        <label class="fila"><input type="radio" name="aj-cmodo" value="carpeta"> {e(t["carpeta_modo_carpeta"])}</label>
+        <span class="ruta-fila"><input type="text" id="aj-carpeta" autocomplete="off" spellcheck="false" aria-label="{e(t["carpeta_modo_carpeta"], quote=True)}"><button type="button" class="b" id="aj-elegir">{e(t["carpeta_elegir"])}</button></span>
+        <label class="fila"><input type="radio" name="aj-cmodo" value="ninguna"> {e(t["carpeta_modo_ninguna"])}</label>
+      </fieldset>
+      <p class="tenue">{e(t["carpeta_ayuda"])}</p>
+      <p class="alerta" id="aj-c-aviso" hidden>{e(t["carpeta_no_existe"])}</p>
+    </div>
+    <div role="tabpanel" id="pan-tareas" aria-labelledby="tab-tareas" hidden>
       <label>{e(t["tope_revision"])}<input type="number" id="aj-tope" min="0" max="99" step="1"></label>
       <p class="tenue">{e(t["tope_revision_ayuda"])}</p>
+      <label>{e(t["tablero_label"])}<input type="url" id="aj-tablero" autocomplete="off" spellcheck="false" placeholder="https://"></label>
+      <p class="tenue">{e(t["tablero_ayuda"])}</p>
     </div>
-    <p id="aj-error" role="alert" data-generico="{e(t["error_config"], quote=True)}" hidden></p>
+    <p id="aj-error" role="alert" data-generico="{e(t["error_config"], quote=True)}" data-sinruta="{e(t["carpeta_falta"], quote=True)}" hidden></p>
     <div class="botones">
       <button type="button" class="b" id="aj-cancelar">{e(t["cancelar"])}</button>
       <button type="submit" class="b primario">{e(t["guardar"])}</button>
@@ -1453,7 +1606,8 @@ class Manejador(BaseHTTPRequestHandler):
         partes =[unquote(p) for p in ruta.split("/") if p]
         if partes[:2] == ["api", "config"] and len(partes) <= 3:
             if len(partes) == 2:
-                return self._enviar(200, json.dumps({"config": config.global_()}))
+                return self._enviar(200, json.dumps({"config": config.global_(), "carpeta_proyectos": info_carpeta(),
+                                                     "tablero": config.tablero() or ""}))
             if NOMBRE_OK.match(partes[2]) and partes[2] in proyectos_con_estado():
                 return self._enviar(200, json.dumps({"config": config.de_agente(partes[2]),
                                                      "vivo": partes[2] in ventanas_vivas()}))
@@ -1471,7 +1625,7 @@ class Manejador(BaseHTTPRequestHandler):
             if partes[1:] == ["carpetas"]:
                 return self._enviar(200, opciones_proyecto(idioma), cab)
             if len(partes) == 3 and partes[1] == "tareas" and partes[2] in carpetas():
-                return self._enviar(200, opciones_tarea(idioma, partes[2]), cab)
+                return self._enviar(200, opciones_tarea(idioma, os.path.join(carpeta(), partes[2])), cab)
             if len(partes) == 3 and NOMBRE_OK.match(partes[2]) and partes[2] in proyectos_con_estado():
                 if partes[1] == "agente":
                     return self._enviar(200, ficha(idioma, partes[2]), cab)
