@@ -47,8 +47,14 @@ print(p.get(sys.argv[3], ""))
 PY
 }
 
-# Da de alta el proyecto si es un repo de PROYECTOS_DIR aún no registrado.
-registrar() { python3 "$DIR/registro.py" "$REG" "$PROYECTOS_DIR" "$1"; }
+# Da de alta el proyecto y escribe su clave del registro. Acepta un nombre (repo de la
+# carpeta de proyectos de Configuración o del entorno) o la ruta absoluta de un repo.
+resolver_proyecto() {
+  case "$1" in
+    /*) python3 "$DIR/registro.py" "$REG" --ruta "$1" "$HOME_AG" ;;
+    *) python3 "$DIR/registro.py" "$REG" "$(python3 "$DIR/config.py" proyectos)" "$1" && printf '%s\n' "$1" ;;
+  esac
+}
 
 # origin/<base> si existe; si no, la rama local (repos sin remoto).
 ref_base() {
@@ -74,13 +80,14 @@ tareas() {
 
 cmd_siguiente() {
   local p="$1" repo base
-  registrar "$p"
+  p="$(resolver_proyecto "$p")" || exit 1
   repo="$(campo "$p" repo)"; base="$(campo "$p" base)"
   traer "$repo" "$base"
-  local tope; tope="$(python3 "$DIR/config.py" valor tope_revision)"
-  if [ "$tope" = "0" ]; then m revision_sin_tope "n=$(tareas "$repo" "$base" revision)"
-  else m revision_tope "n=$(tareas "$repo" "$base" revision)" "tope=$tope"; fi
-  tareas "$repo" "$base" lista
+  local tope resumen lista; tope="$(python3 "$DIR/config.py" valor tope_revision)"
+  if [ "$tope" = "0" ]; then resumen="$(m revision_sin_tope "n=$(tareas "$repo" "$base" revision)")"
+  else resumen="$(m revision_tope "n=$(tareas "$repo" "$base" revision)" "tope=$tope")"; fi
+  lista="$(tareas "$repo" "$base" lista)"
+  printf '%s\n%s\n' "$resumen" "$lista"   # de una vez: quien lee solo la primera línea no rompe la tubería
 }
 
 cmd_lanzar() {
@@ -98,7 +105,7 @@ cmd_lanzar() {
     shift
   done
 
-  registrar "$p"
+  p="$(resolver_proyecto "$p")" || exit 1
   local repo base comando max
   repo="$(campo "$p" repo)"; base="$(campo "$p" base)"
   comando="$(campo "$p" comando)"; max="$(python3 "$DIR/config.py" valor tope_revision)"
@@ -465,7 +472,7 @@ primero se llama como el proyecto y los siguientes <proyecto>@2, <proyecto>@3…
   dixi-tower panel [puerto]                    panel web (http://localhost:4310/)
   dixi-tower servicio instalar|quitar|reiniciar|estado   panel siempre encendido (macOS, Linux, WSL)
   dixi-tower doctor                            revisa requisitos e instalación
-  dixi-tower lanzar <proyecto> libre --instruccion <archivo> [--motor M] [--autonomia A]
+  dixi-tower lanzar <proyecto|/ruta/al/repo> libre --instruccion <archivo> [--motor M] [--autonomia A]
   dixi-tower lanzar <proyecto> <id-de-tarea> [--forzar] [--instruccion <archivo>]
   dixi-tower siguiente <proyecto>              tareas pendientes de un proyecto, por prioridad
   dixi-tower estado                            tabla de todos los agentes
@@ -489,7 +496,7 @@ named after the project, the next ones <project>@2, <project>@3…
   dixi-tower panel [port]                      web panel (http://localhost:4310/)
   dixi-tower service install|uninstall|restart|status   keep the panel always on (macOS, Linux, WSL)
   dixi-tower doctor                            check requirements and installation
-  dixi-tower launch <project> free --instruction <file> [--engine E] [--autonomy A]
+  dixi-tower launch <project|/path/to/repo> free --instruction <file> [--engine E] [--autonomy A]
   dixi-tower launch <project> <task-id> [--force] [--instruction <file>]
   dixi-tower next <project>                    pending tasks of a project, by priority
   dixi-tower status                            table of every agent

@@ -74,9 +74,14 @@ if platform.system() == "Darwin":
 
 print(T("\nInstalación", "\nInstallation"))
 linea(True, T("Carpeta de datos", "Data folder"), config.HOME_AG + ("" if os.path.isdir(config.HOME_AG) else T(" (se crea al primer uso)", " (created on first use)")))
-proyectos = config.entorno("DIXI_TOWER_PROJECTS", "DIXI_PROYECTOS_DIR", os.path.expanduser("~/projects"))
-linea(os.path.isdir(proyectos), T("Carpeta de proyectos", "Projects folder"), proyectos + ("" if os.path.isdir(proyectos) else T(" — no existe; cámbiala con DIXI_TOWER_PROJECTS", " — missing; change it with DIXI_TOWER_PROJECTS")), opcional=True)
-if WSL and os.path.isdir(proyectos) and en_disco_de_windows(proyectos):
+proyectos = config.carpeta_proyectos()
+origen = config.origen_carpeta()
+de = {"config": T("Configuración", "settings"), "predeterminada": T("predeterminada", "default")}.get(origen, origen)
+if not proyectos:
+    linea(True, T("Carpeta de proyectos", "Projects folder"), T("ninguna por defecto (se pide la ruta de cada repositorio)", "none by default (each repository's path is asked for)"), opcional=True)
+else:
+    linea(os.path.isdir(proyectos), T("Carpeta de proyectos", "Projects folder"), f"{proyectos} ({de})" + ("" if os.path.isdir(proyectos) else T(" — no existe; cámbiala en Configuración › Proyectos", " — missing; change it in Settings › Projects")), opcional=True)
+if WSL and proyectos and os.path.isdir(proyectos) and en_disco_de_windows(proyectos):
     linea(False, T("Proyectos dentro de Linux", "Projects inside Linux"),
           T("están en el disco de Windows (/mnt/…), donde git va muy lento; muévelos a ~/projects dentro de WSL",
             "they are on the Windows drive (/mnt/…), where git is very slow; move them to ~/projects inside WSL"), opcional=True)
