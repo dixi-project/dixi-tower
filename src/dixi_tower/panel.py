@@ -899,7 +899,7 @@ JS = """
   function letra(d){tam=Math.max(8,Math.min(18,tam+d));term.style.fontSize=tam+'px';localStorage.setItem('torre.letra',tam);}
   function items(){return [].slice.call(lado.querySelectorAll('.item'));}
   function visibles(){return items().filter(function(b){return !b.parentNode.hidden;});}
-  function sugerir(s){propuesta=s||'';txt.placeholder=propuesta?txt.dataset.sugerida.replace('{texto}',propuesta):txt.dataset.base;}
+  function sugerir(s){propuesta=s||'';txt.placeholder=propuesta?txt.dataset.sugerida.replace('{texto}',function(){return propuesta;}):txt.dataset.base;}
   function armar(si){armado=si;parar.classList.toggle('armado',si);parar.textContent=si?parar.dataset.confirmar:parar.dataset.normal;}
 
   function aplicar(){
@@ -1041,7 +1041,7 @@ JS = """
     txt.value=antes+texto+' '+despues;
     var c=(antes+texto+' ').length;txt.focus();txt.setSelectionRange(c,c);cerrarSug();
   }
-  function avisoAdj(clave,nombre){adj.textContent=(adj.dataset[clave]||'').replace('{nombre}',nombre||'');adj.hidden=false;}
+  function avisoAdj(clave,nombre){adj.textContent=(adj.dataset[clave]||'').replace('{nombre}',function(){return nombre||'';});adj.hidden=false;}
   function subir(archivos){
     if(!sel||!archivos.length)return;
     var p=sel,cola=[].slice.call(archivos);
@@ -1058,9 +1058,9 @@ JS = """
     })();
   }
   var ex=$('explorar'),exL=$('ex-lista'),exR=$('ex-ruta'),exE=$('ex-error'),exActual=null,exElegir=null;
-  // alElegir (si se pasa) pone el explorador en modo carpeta: sin archivos y entregando la ruta a esa función.
+  // Cada apertura fija su modo: alElegir (si se pasa) pone el explorador en modo carpeta: sin archivos y entregando la ruta a esa función.
   function abrirExplorar(ruta,alElegir){
-    if(alElegir!==undefined){exElegir=alElegir;}
+    exElegir=alElegir||null;
     var modoCarpeta=!!exElegir;
     $('ex-t').textContent=$('ex-t').dataset[modoCarpeta?'carpeta':'normal'];
     $('ex-nota').textContent=$('ex-nota').dataset[modoCarpeta?'carpeta':'normal'];
@@ -1076,19 +1076,20 @@ JS = """
       if(!modoCarpeta)d.archivos.forEach(function(n){fila(n,'archivo',d.ruta+'/'+n);});
       if(!ex.open)ex.showModal();
     }).catch(function(m){
-      if(ruta&&!ex.open&&modoCarpeta){abrirExplorar(null);return;}
+      if(ruta&&!ex.open&&modoCarpeta){abrirExplorar(null,alElegir);return;}
       exE.textContent=(typeof m==='string'&&m)?m:'';exE.hidden=!exE.textContent;if(!ex.open)mal();});
   }
-  $('adjuntar').addEventListener('click',function(){if(sel)abrirExplorar(undefined,null);});
+  $('adjuntar').addEventListener('click',function(){if(sel)abrirExplorar();});
   $('ex-cancelar').addEventListener('click',function(){ex.close();});
   $('ex-usar').addEventListener('click',function(){
     if(!exActual)return;
     ex.close();
     if(exElegir)exElegir(exActual);else insertar(citar(exActual));
   });
+  ex.addEventListener('close',function(){exElegir=null;});
   exL.addEventListener('click',function(ev){
     var b=ev.target.closest('button');if(!b)return;
-    if(b.dataset.tipo==='carpeta')abrirExplorar(b.dataset.destino);
+    if(b.dataset.tipo==='carpeta')abrirExplorar(b.dataset.destino,exElegir);
     else{ex.close();insertar(citar(b.dataset.destino));}
   });
   ['dragenter','dragover'].forEach(function(n){form.addEventListener(n,function(ev){
@@ -1270,7 +1271,7 @@ JS = """
   }
   function rellenarCarpeta(cp){
     var origen=$('aj-origenes').getAttribute('data-'+cp.base_origen)||cp.base_origen;
-    $('aj-c-pred').textContent=$('aj-c-pred').dataset.plantilla.replace('{carpeta}',cp.base).replace('{origen}',origen);
+    $('aj-c-pred').textContent=$('aj-c-pred').dataset.plantilla.replace('{carpeta}',function(){return cp.base;}).replace('{origen}',function(){return origen;});
     document.querySelector('input[name=aj-cmodo][value='+(cp.modo==='carpeta'?'carpeta':cp.modo==='ninguna'?'ninguna':'predeterminada')+']').checked=true;
     $('aj-carpeta').value=cp.valor||'';
     $('aj-c-aviso').hidden=cp.disponible||cp.modo==='ninguna';
@@ -1279,7 +1280,7 @@ JS = """
     leerConfig(agente).then(function(d){
       var c=d.config,modo=agente?'agente':'global';
       ajAgente=agente||null;ajE.hidden=true;
-      $('aj-t').textContent=$('aj-t').dataset[modo].replace('{agente}',agente||'');
+      $('aj-t').textContent=$('aj-t').dataset[modo].replace('{agente}',function(){return agente||'';});
       $('aj-nota').textContent=$('aj-nota').dataset[modo];
       $('aj-motor').value=c.motor;$('aj-autonomia').value=c.autonomia;
       $('aj-sub').checked=c.subagentes.permitidos;$('aj-submax').value=c.subagentes.max;

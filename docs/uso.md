@@ -38,6 +38,8 @@ dixi-tower eliminar <agente>                       # quitar uno cerrado y su wor
 tmux attach -t dixi-tower                          # consolas en vivo
 ```
 
+Tras cambiar la carpeta de proyectos, `lanzar <nombre>` por CLI usa el proyecto ya registrado con ese nombre; si hay duda, usa la ruta absoluta. El registro guarda la ruta real (sin symlinks).
+
 ## Configuración
 
 Se cambia desde el panel: **Configuración** (valores con los que nace cada agente, en `~/.dixi-tower/config.json`; tiene tres pestañas, **Agentes**, **Proyectos** y **Tareas**) y **Ajustes** en la ficha de cada agente (su copia propia, en su archivo de estado).

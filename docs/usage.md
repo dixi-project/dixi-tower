@@ -38,6 +38,8 @@ dixi-tower delete <agent>                          # remove a stopped agent and 
 tmux attach -t dixi-tower                          # live consoles
 ```
 
+After changing the projects folder, `launch <name>` from the CLI uses the project already registered under that name; if in doubt, use the absolute path. The registry stores the real path (symlinks resolved).
+
 ## Settings
 
 Changed from the panel: **Settings** in the sidebar (values every new agent starts with, stored in `~/.dixi-tower/config.json`; it has three tabs, **Agents**, **Projects** and **Tasks**) and **Settings** on each agent's card (its own copy, stored in its state file).
