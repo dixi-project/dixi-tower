@@ -13,7 +13,7 @@ DT="${DIXI_TOWER_BIN:-$AQUI/dixi-tower}"
 SRC="${DIXI_TOWER_SRC:-$AQUI/src/dixi_tower}"
 T="$(mktemp -d "${TMPDIR:-/tmp}/dixi-tower-smoke.XXXXXX")"
 export DIXI_TOWER_HOME="$T/datos" DIXI_TOWER_PROJECTS="$T/proyectos" DIXI_TOWER_SESSION="dixi-tower-smoke-$$"
-unset DIXI_AGENTES_HOME DIXI_PROYECTOS_DIR DIXI_AGENTES_REGISTRO
+unset DIXI_AGENTES_HOME DIXI_PROYECTOS_DIR DIXI_AGENTES_REGISTRO DIXI_TOWER_LANG LC_ALL LC_MESSAGES   # el idioma lo decide LANG (los runners de macOS fijan LC_ALL)
 export PATH="$T/bin:$PATH" LANG=en_US.UTF-8
 fallos=0
 ok()   { echo "  ok   $1"; }

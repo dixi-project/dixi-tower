@@ -20,7 +20,7 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 ### 2. Instalación
 
 - [x] Instalación con `uv tool install` o `pipx install` desde GitHub, probada con la prueba de humo contra lo instalado.
-- [ ] Publicar en PyPI (`uv tool install dixi-tower`).
+- [x] Publicar en PyPI (`uv tool install dixi-tower`): al empujar una etiqueta `v*`, `release.yml` construye, prueba el wheel y publica con Trusted Publishing, primero en TestPyPI y, con aprobación, en PyPI.
 - [x] `dixi-tower doctor`: revisa requisitos, motores e instalación. Falta comprobar que el motor tiene sesión iniciada.
 - [x] Licencia MIT.
 
@@ -51,7 +51,7 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 
 - [x] Prueba de humo repetible (`tests/smoke.sh`), con motores falsos y una sesión tmux aislada.
 - [ ] Pruebas del panel en un navegador (hoy se verifican a mano).
-- [ ] Integración continua: correr `tests/smoke.sh` y `tests/linux.sh` en cada cambio.
+- [x] Integración continua (`ci.yml`): en cada push y PR, `tests/smoke.sh` en Ubuntu y macOS desde el repositorio y contra el wheel instalado (`tests/wheel.sh`), y `tests/linux.sh` en Debian con Docker.
 
 ## Después
 

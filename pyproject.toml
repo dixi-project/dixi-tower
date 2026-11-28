@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dixi-tower"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Local control tower for coding agents: launch, watch and steer Claude Code and Codex sessions from one web panel."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -30,6 +30,9 @@ Repository = "https://github.com/dixi-project/dixi-tower"
 
 [project.scripts]
 dixi-tower = "dixi_tower.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "dixi_tower.__version__" }   # única fuente: src/dixi_tower/__init__.py
 
 [tool.setuptools.packages.find]
 where = ["src"]

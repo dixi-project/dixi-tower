@@ -42,12 +42,14 @@ Funciona con la suscripción que ya tienes: sin llaves de API, sin servicio en l
 
 ## Inicio rápido
 
-Instálalo con [uv](https://docs.astral.sh/uv/) o pipx, directo desde GitHub:
+Instálalo desde [PyPI](https://pypi.org/project/dixi-tower/) con [uv](https://docs.astral.sh/uv/) o pipx:
 
 ```sh
-uv tool install git+https://github.com/dixi-project/dixi-tower
-# o bien: pipx install git+https://github.com/dixi-project/dixi-tower
+uv tool install dixi-tower
+# o bien: pipx install dixi-tower
 ```
+
+Para probar los últimos cambios aún sin publicar, instálalo directo desde GitHub: `uv tool install git+https://github.com/dixi-project/dixi-tower`.
 
 Después:
 
