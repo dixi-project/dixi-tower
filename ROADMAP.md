@@ -56,7 +56,7 @@ El sitio del proyecto será https://dixi-tower.dixi-project.com/.
 ## Después
 
 - Sitio y documentación en https://dixi-tower.dixi-project.com/, con una URL por idioma.
-- Ícono en la barra de menú de macOS con el número de agentes que esperan.
+- Apps para macOS, Linux, iOS y Android: en el escritorio levantan la torre y la muestran (en macOS, con el ícono en la barra de menú y el número de agentes que esperan); en el móvil la controlan a distancia. Plan en [docs/apps-nativas.md](docs/apps-nativas.md). Windows sigue con WSL2.
 - Cola continua: que al terminar una tarea se tome sola la siguiente.
 
 ## Links
