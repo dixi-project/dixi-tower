@@ -33,12 +33,14 @@ En macOS, con [Homebrew](https://brew.sh):
 brew install tmux git gh terminal-notifier uv
 ```
 
-Instala Dixi Tower directo desde GitHub:
+Instala Dixi Tower desde PyPI:
 
 ```sh
-uv tool install git+https://github.com/dixi-project/dixi-tower
-# o bien: pipx install git+https://github.com/dixi-project/dixi-tower
+uv tool install dixi-tower
+# o bien: pipx install dixi-tower
 ```
+
+Para probar los últimos cambios aún sin publicar, instálalo directo desde GitHub: `uv tool install git+https://github.com/dixi-project/dixi-tower`.
 
 Comprueba que todo está en su sitio (salida de ejemplo):
 
@@ -85,7 +87,7 @@ Dixi Tower funciona en Windows dentro de WSL2, el Linux que viene con Windows 10
    ```
 3. Instala tu motor (Claude Code o Codex) **dentro de Ubuntu**, con sus instrucciones para Linux, e inicia sesión ahí. Un motor instalado del lado de Windows no cuenta.
 4. Guarda tus repositorios **dentro de Linux**, en `~/projects`. Clónalos ahí en lugar de usar `C:\` (`/mnt/c/…`), donde git va muy lento; `dixi-tower doctor` te avisa si están en el disco de Windows.
-5. Instala Dixi Tower con `pipx install git+https://github.com/dixi-project/dixi-tower`, levántalo con `dixi-tower panel` y abre **http://localhost:4310/** en tu navegador de Windows.
+5. Instala Dixi Tower con `pipx install dixi-tower`, levántalo con `dixi-tower panel` y abre **http://localhost:4310/** en tu navegador de Windows.
 
 Los avisos usan las notificaciones propias de Windows a través de PowerShell, sin instalar nada más. No hay servicio siempre encendido: después de reiniciar Windows o de ejecutar `wsl --shutdown`, vuelve a levantar el panel con `dixi-tower panel`.
 

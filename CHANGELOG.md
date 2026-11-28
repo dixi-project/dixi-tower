@@ -26,10 +26,14 @@ Primera versión como proyecto propio. Nació dentro de un repositorio interno d
 - Logo, imagen social e ícono del panel.
 - Manual de operación con capturas, en inglés y en español (`docs/manual.md`, `docs/manual.es.md`).
 - Reglas del agente en inglés (`worker-prompt.en.md`).
+- Publicación en PyPI (`uv tool install dixi-tower`) con Trusted Publishing, sin tokens guardados: primero en TestPyPI y, con aprobación, en PyPI.
+- Integración continua: prueba de humo en Ubuntu y macOS, desde el repositorio y contra el wheel instalado (`tests/wheel.sh`), y prueba en Debian con Docker.
 - Windows a través de WSL2, probado en Windows Server 2025 con Ubuntu: guía en el manual, `doctor` reconoce WSL y avisa si los proyectos están en el disco de Windows, y los avisos de escritorio usan las notificaciones de Windows.
 
 ### Cambiado
 
+- La versión vive solo en `src/dixi_tower/__init__.py`; `pyproject.toml` la lee de ahí.
+- La instalación recomendada es desde PyPI; la de GitHub queda para probar cambios sin publicar.
 - El enlace al tablero de tareas del panel es opcional: se configura con la clave `tablero`.
 - Textos del panel pensados para quien empieza: el mensaje sin agentes indica el botón «＋ Nuevo agente» y el contador «Agentes activos» pasa a «Trabajando».
 - Las reglas del agente ya no dan por hecho la forma de trabajar de Dixi; cada instalación añade las suyas en `~/.agentes/reglas.md`.
